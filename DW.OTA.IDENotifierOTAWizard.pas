@@ -1,14 +1,30 @@
 unit DW.OTA.IDENotifierOTAWizard;
 
+{*******************************************************}
+{                                                       }
+{         DelphiWorlds Open Tools API Support           }
+{                                                       }
+{          Copyright(c) 2019 David Nottage              }
+{              All rights reserved                      }
+{                                                       }
+{*******************************************************}
+
+{$I DW.GlobalDefines.inc}
+
 interface
 
 uses
+  // Design
   ToolsAPI,
+  // DW
   DW.OTA.Wizard;
 
 type
   TIDENotifierOTAWizard = class;
 
+  /// <summary>
+  ///  Class for forwarding IDE notifications to the wizard
+  /// </summary>
   TIDENotifier = class(TInterfacedObject, IOTAIDENotifier)
   private
     FIndex: Integer;
@@ -27,6 +43,9 @@ type
     destructor Destroy; override;
   end;
 
+  /// <summary>
+  ///  Base OTA Wizard that responds to IDE notifications. Create a descendant of this class for your own add-ins
+  /// </summary>
   TIDENotifierOTAWizard = class(TOTAWizard)
   private
     FIDENotifier: TIDENotifier;
