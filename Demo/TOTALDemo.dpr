@@ -1,5 +1,7 @@
 library TOTALDemo;
 
+{$R 'Icon.res' '..\Icon.rc'}
+{$R 'VersionInfo.res' 'VersionInfo.rc'}
 {$I DW.LibSuffixIDE.inc}
 
 uses

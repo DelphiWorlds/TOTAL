@@ -106,6 +106,13 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <RcCompile Include="..\Icon.rc">
+            <Form>Icon.res</Form>
+        </RcCompile>
+        <RcCompile Include="VersionInfo.rc">
+            <ModuleName>VersionInfo.rc</ModuleName>
+            <Form>VersionInfo.res</Form>
+        </RcCompile>
         <DCCReference Include="TotalDemo.OTAWizard.pas"/>
         <DCCReference Include="TotalDemo.Consts.pas"/>
         <DCCReference Include="TotalDemo.FormEnhancer.pas"/>
