@@ -4,7 +4,7 @@ unit DW.OTA.Consts;
 {                                                       }
 {         DelphiWorlds Open Tools API Support           }
 {                                                       }
-{          Copyright(c) 2018 David Nottage              }
+{          Copyright(c) 2019 David Nottage              }
 {              All rights reserved                      }
 {                                                       }
 {*******************************************************}
