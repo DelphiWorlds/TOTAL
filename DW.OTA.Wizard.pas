@@ -4,7 +4,7 @@ unit DW.OTA.Wizard;
 {                                                       }
 {         DelphiWorlds Open Tools API Support           }
 {                                                       }
-{          Copyright(c) 2018 David Nottage              }
+{          Copyright(c) 2019 David Nottage              }
 {              All rights reserved                      }
 {                                                       }
 {*******************************************************}
@@ -24,6 +24,9 @@ uses
   Vcl.Forms, Vcl.ExtCtrls;
 
 type
+  /// <summary>
+  ///  Base Wizard. Create descendants of this class to act as "sub-wizards" of your OTA Wizard
+  /// </summary>
   TWizard = class(TInterfacedObject)
   private
     class var FReg: TRegistry;
@@ -57,6 +60,12 @@ type
 
   TOTAWizardClass = class of TOTAWizard;
 
+  /// <summary>
+  ///   Base OTA Wizard. This class manages all that's required for your add-in
+  /// </summary>
+  /// <remarks>
+  ///   Usually, add-ins will use descendants of TIDENotifierOTAWizard, rather than of this class
+  /// </remarks>
   TOTAWizard = class(TInterfacedObject, IOTAWizard)
   private
     class var FIndex: Integer;
@@ -331,17 +340,17 @@ end;
 
 procedure TOTAWizard.AfterSave;
 begin
-  // nothing
+  //
 end;
 
 procedure TOTAWizard.BeforeSave;
 begin
-  // nothing
+  //
 end;
 
 procedure TOTAWizard.Destroyed;
 begin
-  // nothing
+  //
 end;
 
 procedure TOTAWizard.Modification;
@@ -357,12 +366,12 @@ end;
 
 procedure TOTAWizard.Modified;
 begin
-  // Nothing
+  //
 end;
 
 procedure TOTAWizard.Execute;
 begin
-  // Nothing
+  //
 end;
 
 procedure TOTAWizard.FileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string);
