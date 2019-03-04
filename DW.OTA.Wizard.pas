@@ -84,17 +84,47 @@ type
     procedure NotifyIDEStarted;
     procedure RegisterPlugin;
   protected
+    /// <summary>
+    ///   Override this function with the name of your add-in
+    /// </summary>
     class function GetWizardName: string; virtual;
+    /// <summary>
+    ///   Override this function if necessary to provide the add-in's version (default is Major.Minor.Release)
+    /// </summary>
     class function GetWizardVersion: string; virtual;
+    /// <summary>
+    ///   Call RegisterSplash in the initialization section of your TOTAWizard descendants unit
+    /// </summary>
     class procedure RegisterSplash;
   protected
+    /// <summary>
+    ///   Called when the active form of the IDE changes
+    /// </summary>
     procedure ActiveFormChanged; virtual;
+    /// <summary>
+    ///   Call ConfigChanged to notify the "sub-wizards" that the configuration has changed
+    /// </summary>
     procedure ConfigChanged;
+    /// <summary>
+    ///   Call FileNotification to notify the "sub-wizards" of the TOTAFileNotification
+    /// </summary>
     procedure FileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string);
     function GetWizardPluginName: string;
+    /// <summary>
+    ///   Override this function with the description of your add-in
+    /// </summary>
     function GetWizardDescription: string; virtual;
+    /// <summary>
+    ///   Override this function to respond when the IDE has started
+    /// </summary>
     procedure IDEStarted; virtual;
+    /// <summary>
+    ///   Call Modification to notify the "sub-wizards" that a modification has occurred
+    /// </summary>
     procedure Modification;
+    /// <summary>
+    ///   Override this function to respond when all the "sub-wizards" have been created
+    /// </summary>
     procedure WizardsCreated; virtual;
     { IOTANotifier }
     procedure AfterSave;
@@ -103,13 +133,31 @@ type
     procedure Modified;
     { IOTAWizard }
     procedure Execute;
+    /// <summary>
+    ///   Override GetIDString with a unique id for your add-in (e.g. com.mydomain.myexpert)
+    /// </summary>
     function GetIDString: string; virtual;
+    /// <summary>
+    ///   Override GetName with a name for your add-in
+    /// </summary>
     function GetName: string; virtual;
     function GetState: TWizardState;
+    /// <summary>
+    ///   Provides class-based access to the instance of the add-in
+    /// </summary>
     class property Wizard: TOTAWizard read FWizard;
   public
+    /// <summary>
+    ///   Call InitializeWizard from the function named as WizardEntryPoint that is exported by your add-in
+    /// </summary>
+    /// <remarks>
+    ///   Refer to the export section at the end of the TotalDemo.OTAWizard unit
+    /// </remarks>
     class function InitializeWizard(const Services: IBorlandIDEServices; RegisterProc: TWizardRegisterProc;
       var TerminateProc: TWizardTerminateProc; const AWizardClass: TOTAWizardClass): Boolean;
+    /// <summary>
+    ///   Call RegisterWizard to register a "sub-wizard" that is managed by the add-in
+    /// </summary>
     class procedure RegisterWizard(const AWizardClass: TWizardClass);
   public
     constructor Create; virtual;

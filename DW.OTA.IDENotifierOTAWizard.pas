@@ -50,15 +50,29 @@ type
   private
     FIDENotifier: TIDENotifier;
   protected
+    /// <summary>
+    ///   Override IDENotifierAfterCompile to be notified when a compile has finished
+    /// </summary>
     procedure IDENotifierAfterCompile(Succeeded: Boolean); virtual;
+    /// <summary>
+    ///   Override IDENotifierAfterSave to be notified after a file is saved
+    /// </summary>
     procedure IDENotifierAfterSave; virtual;
+    /// <summary>
+    ///   Override IDENotifierBeforeCompile to be notified when a compile is about to start
+    /// </summary>
     procedure IDENotifierBeforeCompile(const Project: IOTAProject; var Cancel: Boolean); virtual;
+    /// <summary>
+    ///   Override IDENotifierAfterSave to be notified when a file is about to be saved
+    /// </summary>
     procedure IDENotifierBeforeSave; virtual;
     procedure IDENotifierDestroyed; virtual;
+    /// <summary>
+    ///   Override IDENotifierFileNotification to be notified of a TOTAFileNotification
+    /// </summary>
     procedure IDENotifierFileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string); virtual;
   public
     constructor Create; override;
-    destructor Destroy; override;
   end;
 
 implementation
@@ -119,13 +133,6 @@ constructor TIDENotifierOTAWizard.Create;
 begin
   inherited;
   FIDENotifier := TIDENotifier.Create(Self);
-  // AddWizardMenu;
-end;
-
-destructor TIDENotifierOTAWizard.Destroy;
-begin
-  // FCodexMenuItem.Free;
-  inherited;
 end;
 
 procedure TIDENotifierOTAWizard.IDENotifierAfterCompile(Succeeded: Boolean);
