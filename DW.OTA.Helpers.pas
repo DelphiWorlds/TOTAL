@@ -4,7 +4,7 @@ unit DW.OTA.Helpers;
 {                                                       }
 {         DelphiWorlds Open Tools API Support           }
 {                                                       }
-{          Copyright(c) 2018 David Nottage              }
+{          Copyright(c) 2019 David Nottage              }
 {              All rights reserved                      }
 {                                                       }
 {*******************************************************}
@@ -14,9 +14,13 @@ unit DW.OTA.Helpers;
 interface
 
 uses
+  // RTL
   System.Classes,
+  // Design
   ToolsAPI,
+  // VCL
   Vcl.Menus,
+  // DW
   DW.OTA.Types;
 
 const
@@ -29,34 +33,121 @@ type
   private
     class function FindComponentRecurse(const AParent: TComponent; const AComponentName: string; out AComponent: TComponent): Boolean; static;
   public
+    /// <summary>
+    ///  Set this flag if building for debug
+    /// </summary>
     class var IsDebug: Boolean;
+    /// <summary>
+    ///  Adds an image to the IDEs image list
+    /// </summary>
     class function AddImage(const AResName: string): Integer; static;
+    /// <summary>
+    ///  Adds a message to a group entitled TOTAL Debug
+    /// </summary>
     class procedure AddDebugMessage(const AMsg: string); static;
+    /// <summary>
+    ///  Adds a message to a group specified by AGroupName
+    /// </summary>
     class procedure AddTitleMessage(const AMsg: string; const AGroupName: string = ''); static;
+    /// <summary>
+    ///  Expands a folder
+    /// </summary>
     class function ExpandOutputDir(const ASource: string): string; static;
+    /// <summary>
+    ///  Expands the paths associated with a project
+    /// </summary>
     class procedure ExpandPaths(const APaths: TStrings; const AProject: IOTAProject = nil); static;
+    /// <summary>
+    ///  Expands the paths associated with the active configuration
+    /// </summary>
     class function ExpandProjectActiveConfiguration(const ASource: string; const AProject: IOTAProject): string; static;
+    /// <summary>
+    ///  Expands the variables contained in ASource
+    /// </summary>
     class function ExpandVars(const ASource: string): string; static;
+    /// <summary>
+    ///  Finds a form with a particular name
+    /// </summary>
     class function FindForm(const AFormName: string; out AForm: TComponent): Boolean; static;
+    /// <summary>
+    ///  Finds a component application-wide
+    /// </summary>
     class function FindComponentGlobal(const AComponentName: string; out AComponent: TComponent): Boolean; static;
+    /// <summary>
+    ///  Finds a menu with a given name from the given parent
+    /// </summary>
     class function FindMenu(const AParentItem: TMenuItem; const AMenuName: string; out AMenuItem: TMenuItem): Boolean; static;
+    /// <summary>
+    ///  Finds the IDEs Tools menu
+    /// </summary>
     class function FindToolsMenu(out AMenuItem: TMenuItem): Boolean; static;
+    /// <summary>
+    ///  Finds a submenu with the given name under Tools
+    /// </summary>
     class function FindToolsSubMenu(const AMenuName: string; out AMenuItem: TMenuItem): Boolean; static;
+    /// <summary>
+    ///  Finds a top-level menu with the given name
+    /// </summary>
     class function FindTopMenu(const AMenuName: string; out AMenuItem: TMenuItem): Boolean; static;
+    /// <summary>
+    ///  Gets the active project, if any
+    /// </summary>
     class function GetActiveProject: IOTAProject; static;
+    /// <summary>
+    ///  Gets the active project options, if any
+    /// </summary>
     class function GetActiveProjectOptions: IOTAProjectOptions; static;
+    /// <summary>
+    ///  Gets the configurations for the active project, if any
+    /// </summary>
     class function GetActiveProjectOptionsConfigurations: IOTAProjectOptionsConfigurations; static;
+    /// <summary>
+    ///  Gets the output folder for the active project
+    /// </summary>
     class function GetActiveProjectOutputDir: string; static;
+    /// <summary>
+    ///  Gets the environment options for the IDE
+    /// </summary>
     class function GetEnvironmentOptions: IOTAEnvironmentOptions; static;
+    /// <summary>
+    ///  Gets the main form for the IDE
+    /// </summary>
     class function GetMainForm: TComponent; static;
+    /// <summary>
+    ///  Gets the effective paths for the active project
+    /// </summary>
     class procedure GetProjectActiveEffectivePaths(const AProject: IOTAProject; const APaths: TStrings; const ABase: Boolean = False); static;
+    /// <summary>
+    ///  Gets the current platform for the given project
+    /// </summary>
     class function GetProjectCurrentPlatform(const AProject: IOTAProject): TProjectPlatform; static;
+    /// <summary>
+    ///  Gets the current project group, if any
+    /// </summary>
     class function GetProjectGroup: IOTAProjectGroup; static;
+    /// <summary>
+    ///  Gets the options configurations for the given project
+    /// </summary>
     class function GetProjectOptionsConfigurations(const AProject: IOTAProject): IOTAProjectOptionsConfigurations; static;
+    /// <summary>
+    ///  Gets the output folder for the given project
+    /// </summary>
     class function GetProjectOutputDir(const AProject: IOTAProject): string; static;
+    /// <summary>
+    ///  Gets the base registry key for the IDE
+    /// </summary>
     class function GetRegKey: string; static;
+    /// <summary>
+    ///  Indicates whether or not the IDE is closing
+    /// </summary>
     class function IsIDEClosing: Boolean; static;
+    /// <summary>
+    ///  Opens the given file in the IDE, where the file may be a project or a group
+    /// </summary>
     class function OpenFile(const AFilename: string): Boolean; static;
+    /// <summary>
+    ///  Shows the message view in the messages window for the given group
+    /// </summary>
     class procedure ShowMessageView(const AGroupName: string = ''); static;
   end;
 
@@ -70,7 +161,7 @@ uses
   PlatformAPI, DCCStrs,
   Winapi.Windows, Winapi.ShLwApi,
   Vcl.Forms, Vcl.Graphics,
-  DW.OTA.Consts; // , DW.OS.Win;
+  DW.OTA.Consts;
 
 // Tweaked version of David Heffernan's answer, here:
 //   https://stackoverflow.com/questions/5329472/conversion-between-absolute-and-relative-paths-in-delphi
@@ -179,7 +270,7 @@ end;
 class procedure TOTAHelper.AddDebugMessage(const AMsg: string);
 begin
   if IsDebug then
-    AddTitleMessage(AMsg, 'DW Debug');
+    AddTitleMessage(AMsg, 'TOTAL Debug');
 end;
 
 class procedure TOTAHelper.AddTitleMessage(const AMsg: string; const AGroupName: string = '');
