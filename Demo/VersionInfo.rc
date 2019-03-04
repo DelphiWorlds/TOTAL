@@ -1,0 +1,27 @@
+1 VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0x0L
+FILEOS 0x4
+FILETYPE 0x1
+{
+  BLOCK "StringFileInfo"
+  {
+    BLOCK "041304E4"
+    {
+      VALUE "CompanyName", "Delphi Worlds"
+      VALUE "FileDescription", "Total Demo"
+      VALUE "FileVersion", "1.0.0.0"
+      VALUE "InternalName", "Total Demo"
+      VALUE "OriginalFilename", "Total Demo"
+      VALUE "ProductName", "Total Demo"
+      VALUE "ProductVersion", "1.0.0.0"
+    }
+  }
+
+  BLOCK "VarFileInfo"
+  {
+    VALUE "Translation", 0x0413 0x04E4
+  }
+}
