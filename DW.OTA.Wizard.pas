@@ -24,6 +24,11 @@ uses
   Vcl.Forms, Vcl.ExtCtrls;
 
 type
+  TUserRegistry = class(TRegistry)
+  public
+    constructor Create;
+  end;
+
   /// <summary>
   ///  Base Wizard. Create descendants of this class to act as "sub-wizards" of your OTA Wizard
   /// </summary>
@@ -33,7 +38,6 @@ type
     class var FEnvVars: TStrings;
     class destructor DestroyClass;
   private
-    procedure CreateReg;
     function GetEnvVars: TStrings;
   protected
     procedure ActiveFormChanged; virtual;
@@ -132,7 +136,7 @@ type
     procedure Destroyed;
     procedure Modified;
     { IOTAWizard }
-    procedure Execute;
+    procedure Execute; virtual;
     /// <summary>
     ///   Override GetIDString with a unique id for your add-in (e.g. com.mydomain.myexpert)
     /// </summary>
@@ -193,18 +197,9 @@ begin
   end;
 end;
 
-{ TWizard }
+{ TUserRegistry }
 
-constructor TWizard.Create;
-begin
-  inherited;
-  if FReg = nil then
-    CreateReg;
-  if FEnvVars = nil then
-    FEnvVars := TStringList.Create;
-end;
-
-procedure TWizard.CreateReg;
+constructor TUserRegistry.Create;
 var
   LAccess: Cardinal;
 begin
@@ -213,8 +208,19 @@ begin
     LAccess := LAccess or KEY_WOW64_64KEY
   else
     LAccess := LAccess or KEY_WOW64_32KEY;
-  FReg := TRegistry.Create(LAccess);
-  FReg.RootKey := HKEY_CURRENT_USER;
+  inherited Create(LAccess);
+  RootKey := HKEY_CURRENT_USER;
+end;
+
+{ TWizard }
+
+constructor TWizard.Create;
+begin
+  inherited;
+  if FReg = nil then
+    FReg := TUserRegistry.Create;
+  if FEnvVars = nil then
+    FEnvVars := TStringList.Create;
 end;
 
 class destructor TWizard.DestroyClass;
@@ -466,6 +472,8 @@ end;
 class function TOTAWizard.GetWizardVersion: string;
 begin
   Result := TOSDevice.GetPackageVersion;
+  if TOSDevice.IsBeta then
+    Result := Result + ' (Beta)';
 end;
 
 procedure TOTAWizard.RegisterPlugin;

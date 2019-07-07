@@ -73,9 +73,13 @@ type
     procedure IDENotifierFileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string); virtual;
   public
     constructor Create; override;
+    destructor Destroy; override;
   end;
 
 implementation
+
+uses
+  DW.OSLog;
 
 { TIDENotifier }
 
@@ -88,6 +92,7 @@ end;
 
 destructor TIDENotifier.Destroy;
 begin
+  TOSLog.d('TIDENotifier.Destroy');
   (BorlandIDEServices as IOTAServices).RemoveNotifier(FIndex);
   inherited;
 end;
@@ -133,6 +138,12 @@ constructor TIDENotifierOTAWizard.Create;
 begin
   inherited;
   FIDENotifier := TIDENotifier.Create(Self);
+end;
+
+destructor TIDENotifierOTAWizard.Destroy;
+begin
+  TOSLog.d('TIDENotifierOTAWizard.Destroy');
+  inherited;
 end;
 
 procedure TIDENotifierOTAWizard.IDENotifierAfterCompile(Succeeded: Boolean);

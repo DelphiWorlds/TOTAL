@@ -20,9 +20,8 @@ uses
   DW.OTA.Types;
 
 const
-  // macOS consts are a workaround until macOS64 support is released
   cProjectPlatforms: array[TProjectPlatform] of string = (
-    cAndroidPlatform, ciOSDevice32Platform , ciOSDevice64Platform, ciOSSimulatorPlatform, cLinux64Platform, 'macOS32', 'macOS64',
+    cAndroid32ArmPlatform, ciOSDevice32Platform , ciOSDevice64Platform, ciOSSimulator32Platform, cLinux64Platform, cOSX32Platform, cOSX64Platform,
     cWin32Platform, cWin64Platform
   );
 
@@ -49,6 +48,10 @@ const
     sSpacingToolbar, sIDEInsightToolbar, sPlatformDeviceToolbar
   );
   {$ENDIF}
+
+  cAppleProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.iOSDevice32, TProjectPlatform.iOSDevice64,
+    TProjectPlatform.macOS32, TProjectPlatform.macOS64];
+  cMacOSProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.macOS32, TProjectPlatform.macOS64];
 
 implementation
 

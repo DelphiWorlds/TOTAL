@@ -2,4 +2,5 @@
 
 A Delphi Open Tools API framework
 
-Not much to say here yet...
+TOTAL is designed to make it easier to develop your own Delphi add-ins
+

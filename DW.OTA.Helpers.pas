@@ -16,10 +16,10 @@ interface
 uses
   // RTL
   System.Classes,
-  // Design
-  ToolsAPI,
+  // Tools
+  ToolsAPI, PlatformAPI,
   // VCL
-  Vcl.Menus,
+  Vcl.Menus, Vcl.Forms,
   // DW
   DW.OTA.Types;
 
@@ -32,6 +32,7 @@ type
   TOTAHelper = record
   private
     class function FindComponentRecurse(const AParent: TComponent; const AComponentName: string; out AComponent: TComponent): Boolean; static;
+    class function GetSourceEditor(const AModule: IOTAModule): IOTASourceEditor; static;
   public
     /// <summary>
     ///  Set this flag if building for debug
@@ -49,6 +50,10 @@ type
     ///  Adds a message to a group specified by AGroupName
     /// </summary>
     class procedure AddTitleMessage(const AMsg: string; const AGroupName: string = ''); static;
+    /// <summary>
+    ///  Applies the active theme to the component and children
+    /// </summary>
+    class procedure ApplyTheme(const AComponent: TComponent); static;
     /// <summary>
     ///  Expands a folder
     /// </summary>
@@ -90,6 +95,10 @@ type
     /// </summary>
     class function FindTopMenu(const AMenuName: string; out AMenuItem: TMenuItem): Boolean; static;
     /// <summary>
+    ///  Gets the active mobile device name, if any, for the given platform
+    /// </summary>
+    class function GetActiveMobileDeviceName(const APlatform: string): string; static;
+    /// <summary>
     ///  Gets the active project, if any
     /// </summary>
     class function GetActiveProject: IOTAProject; static;
@@ -106,6 +115,14 @@ type
     /// </summary>
     class function GetActiveProjectOutputDir: string; static;
     /// <summary>
+    ///  Gets the active source edtior
+    /// </summary>
+    class function GetActiveSourceEditor: IOTASourceEditor; static;
+    /// <summary>
+    ///  Gets the currently selected project, if any
+    /// </summary>
+    class function GetCurrentSelectedProject: IOTAProject; static;
+    /// <summary>
     ///  Gets the environment options for the IDE
     /// </summary>
     class function GetEnvironmentOptions: IOTAEnvironmentOptions; static;
@@ -118,9 +135,14 @@ type
     /// </summary>
     class procedure GetProjectActiveEffectivePaths(const AProject: IOTAProject; const APaths: TStrings; const ABase: Boolean = False); static;
     /// <summary>
+    ///  Gets the projects current connection profile, if any
+    /// </summary>
+    class function GetProjectCurrentConnectionProfile(const AProject: IOTAProject): string; static;
+    /// <summary>
     ///  Gets the current platform for the given project
     /// </summary>
     class function GetProjectCurrentPlatform(const AProject: IOTAProject): TProjectPlatform; static;
+    class function GetProjectDeployedFileName(const AProject: IOTAProject): string; static;
     /// <summary>
     ///  Gets the current project group, if any
     /// </summary>
@@ -138,13 +160,29 @@ type
     /// </summary>
     class function GetRegKey: string; static;
     /// <summary>
+    ///  Gets a value from version info for the given key
+    /// </summary>
+    class function GetVerInfoValue(const AVerInfo: string; const AKey: string): string; static;
+    /// <summary>
     ///  Indicates whether or not the IDE is closing
     /// </summary>
     class function IsIDEClosing: Boolean; static;
     /// <summary>
+    ///  Indicates whether or not a platform matches the profile platform
+    /// </summary>
+    class function IsMatchingProfilePlatform(const APlatform, AProfilePlatform: string): Boolean; static;
+    /// <summary>
     ///  Opens the given file in the IDE, where the file may be a project or a group
     /// </summary>
     class function OpenFile(const AFilename: string): Boolean; static;
+    /// <summary>
+    ///  Refreshes the project manager tree
+    /// </summary>
+    class procedure RefreshProjectTree; static;
+    /// <summary>
+    ///  Shows the message view in the messages window for the given group
+    /// </summary>
+    class procedure RegisterThemeForms(const AFormClasses: array of TCustomFormClass); static;
     /// <summary>
     ///  Shows the message view in the messages window for the given group
     /// </summary>
@@ -158,9 +196,11 @@ implementation
 
 uses
   System.SysUtils, System.IOUtils,
-  PlatformAPI, DCCStrs,
+  XML.XMLIntf,
+  DCCStrs,
   Winapi.Windows, Winapi.ShLwApi,
-  Vcl.Forms, Vcl.Graphics,
+  Vcl.Graphics, Vcl.Controls,
+  DW.OSLog,
   DW.OTA.Consts;
 
 // Tweaked version of David Heffernan's answer, here:
@@ -411,6 +451,69 @@ begin
   end;
 end;
 
+(*
+procedure SetActiveMobileDeviceToLocal(const Project: IOTAModule;
+const NodeName, ProfileName, PlatformName, ActiveMobileDevice: string);
+const
+  cNoProfile = 'NoProfile';
+var
+  tempProfileName: string;
+  localNode, localNodeChild: IXMLNode;
+  auxStr: string;
+begin
+  localNode := (BorlandIDEServices as IOTAProjectFileStorage).AddNewSection(Project, NodeName, True);
+
+  if ProfileName.IsEmpty then
+    tempProfileName := cNoProfile
+  else tempProfileName := ValidateXMLTag(ProfileName);
+
+  localNodeChild := LocalNode.ChildNodes.FindNode(tempProfileName);
+  if localNodeChild = nil then
+    localNodeChild := LocalNode.AddChild(tempProfileName);
+  auxStr := ActiveMobileDevice;
+  localNodeChild.Attributes[PlatformName] := AuxStr.Replace('%','_');
+end;
+*)
+
+class function TOTAHelper.GetActiveMobileDeviceName(const APlatform: string): string;
+var
+  LProfileName: string;
+  // LModule: IOTAModule;
+  LProject: IOTAProject;
+  LNode: IXMLNode;
+  I: Integer;
+begin
+  Result := '';
+  // LModule := (BorlandIDEServices as IOTAModuleServices).CurrentModule;
+  LProject := GetActiveProject;
+  // if (LModule <> nil) and (LProject <> nil) then
+  if LProject <> nil then
+  begin
+    LProfileName := GetProjectCurrentConnectionProfile(LProject);
+    if not LProfileName.IsEmpty then
+    begin
+      LNode := (BorlandIDEServices as IOTAProjectFileStorage).GetProjectStorageNode(LProject, 'ActiveMobileDevice', True);
+      if LNode <> nil then
+      begin
+        TOSLog.d('ActiveMobileDevice node exists');
+//        if LNode.ChildNodes.Count = 0 then
+//          TOSLog.d('No child nodes');
+//        for I := 0 to LNode.ChildNodes.Count - 1 do
+//          TOSLog.d(LNode.ChildNodes.Get(I).NodeName);
+        LNode := LNode.ChildNodes.FindNode('P'+ LProfileName);
+        if LNode = nil then
+          TOSLog.d('No child node for ' + LProfileName)
+        else if not LNode.HasAttribute(APlatform) then
+          TOSLog.d('No attribute named ' + APlatform);
+        if (LNode <> nil) and LNode.HasAttribute(APlatform) then
+          Result := LNode.Attributes[APlatform];
+      end
+      else
+        TOSLog.d('No node for ActiveMobileDevice');
+    end;
+  end;
+end;
+
 class function TOTAHelper.GetActiveProject: IOTAProject;
 var
   LGroup: IOTAProjectGroup;
@@ -419,6 +522,29 @@ begin
   LGroup := TOTAHelper.GetProjectGroup;
   if LGroup <> nil then
     Result := LGroup.ActiveProject;
+end;
+
+class function TOTAHelper.GetProjectCurrentConnectionProfile(const AProject: IOTAProject): string;
+var
+  LPlatforms: IOTAProjectPlatforms;
+begin
+  Result := '';
+  if Supports(AProject, IOTAProjectPlatforms, LPlatforms) then
+    Result := LPlatforms.GetProfile(AProject.CurrentPlatform);
+end;
+
+class function TOTAHelper.GetProjectDeployedFileName(const AProject: IOTAProject): string;
+var
+  LFileName: string;
+begin
+  Result := '';
+  LFileName := AProject.ProjectOptions.TargetName;
+  case GetProjectCurrentPlatform(AProject) of
+    TProjectPlatform.macOS32, TProjectPlatform.macOS64:
+      Result := TPath.GetFileName(LFileName + '.app');
+    TProjectPlatform.iOSDevice32, TProjectPlatform.iOSDevice64:
+      Result := TPath.GetFileName(LFileName + '.ipa');
+  end;
 end;
 
 class function TOTAHelper.GetActiveProjectOptions: IOTAProjectOptions;
@@ -521,6 +647,18 @@ begin
   Result := (LMainForm = nil) or not TForm(LMainForm).Visible or (csDestroying in LMainForm.ComponentState);
 end;
 
+class function TOTAHelper.IsMatchingProfilePlatform(const APlatform, AProfilePlatform: string): Boolean;
+begin
+  Result := False;
+  if AProfilePlatform.Equals(cOSX32Platform) or AProfilePlatform.Equals(cOSX64Platform) then
+  begin
+    Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform) or APlatform.Equals(ciOSSimulator32Platform)
+      or APlatform.Equals(cOSX32Platform) or APlatform.Equals(cOSX64Platform)
+  end
+  else if AProfilePlatform.Equals(cLinux64Platform) then
+    Result := APlatform.Equals(cLinux64Platform);
+end;
+
 class function TOTAHelper.OpenFile(const AFilename: string): Boolean;
 var
   LActionServices: IOTAActionServices;
@@ -532,6 +670,32 @@ begin
     Result := LActionServices.OpenFile(AFilename);
 end;
 
+class procedure TOTAHelper.ApplyTheme(const AComponent: TComponent);
+begin
+  (BorlandIDEServices as IOTAIDEThemingServices).ApplyTheme(AComponent);
+end;
+
+class procedure TOTAHelper.RefreshProjectTree;
+var
+  LForm: TComponent;
+  LControl: TControl;
+begin
+  if FindForm('ProjectManagerForm', LForm) then
+  begin
+    LControl := TControl(LForm.FindComponent('ProjectTree2'));
+    if LControl <> nil then
+      LControl.Invalidate;
+  end;
+end;
+
+class procedure TOTAHelper.RegisterThemeForms(const AFormClasses: array of TCustomFormClass);
+var
+  LFormClass: TCustomFormClass;
+begin
+  for LFormClass in AFormClasses do
+    (BorlandIDEServices as IOTAIDEThemingServices250).RegisterFormClass(LFormClass);
+end;
+
 class function TOTAHelper.GetActiveProjectOutputDir: string;
 var
   LProject: IOTAProject;
@@ -539,6 +703,47 @@ begin
   LProject := TOTAHelper.GetActiveProject;
   if LProject <> nil then
     Result := TOTAHelper.GetProjectOutputDir(LProject);
+end;
+
+class function TOTAHelper.GetActiveSourceEditor: IOTASourceEditor;
+begin
+  Result := GetSourceEditor((BorlandIDEServices as IOTAModuleServices).CurrentModule);
+end;
+
+class function TOTAHelper.GetCurrentSelectedProject: IOTAProject;
+var
+  LIdent: string;
+begin
+  Result := (BorlandIDEServices as IOTAProjectManager).GetCurrentSelection(LIdent);
+end;
+
+class function TOTAHelper.GetSourceEditor(const AModule: IOTAModule): IOTASourceEditor;
+var
+  I: Integer;
+begin
+  Result := nil;
+  if AModule <> nil then
+  begin
+    for I := 0 To AModule.GetModuleFileCount - 1 do
+    begin
+      if AModule.GetModuleFileEditor(I).QueryInterface(IOTASourceEditor, Result) = S_OK then
+        Break;
+    end;
+  end;
+end;
+
+class function TOTAHelper.GetVerInfoValue(const AVerInfo, AKey: string): string;
+var
+  LPair: TArray<string>;
+  LString: string;
+begin
+  Result := '';
+  for LString in AVerInfo.Split([';']) do
+  begin
+    LPair := LString.Split(['=']);
+    if (Length(LPair) = 2) and SameText(AKey, LPair[0]) then
+      Exit(LPair[1]);
+  end;
 end;
 
 class function TOTAHelper.GetProjectCurrentPlatform(const AProject: IOTAProject): TProjectPlatform;
