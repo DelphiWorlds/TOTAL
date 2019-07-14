@@ -23,7 +23,7 @@ type
     destructor Destroy; override;
   end;
 
-  TDebuggerNotifier = class(TNotifierObject, IOTADebuggerNotifier90)
+  TDebuggerNotifier = class(TNotifierObject, IOTADebuggerNotifier, IOTADebuggerNotifier90)
   private
     FIndex: Integer;
   public
@@ -104,7 +104,7 @@ end;
 constructor TDebuggerNotifier.Create;
 begin
   inherited;
-  FIndex := (BorlandIDEServices as IOTADebuggerServices).AddNotifier(Self as IOTADebuggerNotifier);
+  FIndex := (BorlandIDEServices as IOTADebuggerServices).AddNotifier(Self);
 end;
 
 destructor TDebuggerNotifier.Destroy;
