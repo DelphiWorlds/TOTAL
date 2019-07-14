@@ -123,6 +123,10 @@ type
     /// </summary>
     procedure IDEStarted; virtual;
     /// <summary>
+    ///   Override this function to take advantage of the IDE timer
+    /// </summary>
+    procedure IDETimer; virtual;
+    /// <summary>
     ///   Call Modification to notify the "sub-wizards" that a modification has occurred
     /// </summary>
     procedure Modification;
@@ -203,7 +207,7 @@ constructor TUserRegistry.Create;
 var
   LAccess: Cardinal;
 begin
-  LAccess := KEY_READ;
+  LAccess := KEY_READ or KEY_WRITE;
   if TOSVersion.Architecture = TOSVersion.TArchitecture.arIntelX64 then
     LAccess := LAccess or KEY_WOW64_64KEY
   else
@@ -325,6 +329,11 @@ begin
   //
 end;
 
+procedure TOTAWizard.IDETimer;
+begin
+  //
+end;
+
 procedure TOTAWizard.IDETimerIntervalHandler(Sender: TObject);
 var
   LMainForm: TComponent;
@@ -337,6 +346,7 @@ begin
     FActiveForm := Screen.ActiveForm;
     DoActiveFormChanged;
   end;
+  IDETimer;
 end;
 
 procedure TOTAWizard.DoActiveFormChanged;
