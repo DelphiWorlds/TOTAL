@@ -142,7 +142,7 @@ end;
 
 destructor TIDENotifierOTAWizard.Destroy;
 begin
-  TOSLog.d('TIDENotifierOTAWizard.Destroy');
+  //
   inherited;
 end;
 
