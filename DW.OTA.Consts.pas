@@ -21,7 +21,7 @@ uses
 
 const
   cProjectPlatforms: array[TProjectPlatform] of string = (
-    cAndroid32ArmPlatform, ciOSDevice32Platform , ciOSDevice64Platform, ciOSSimulator32Platform, cLinux64Platform, cOSX32Platform, cOSX64Platform,
+    'Android32', 'Android64', ciOSDevice32Platform , ciOSDevice64Platform, ciOSSimulator32Platform, cLinux64Platform, cOSX32Platform, cOSX64Platform,
     cWin32Platform, cWin64Platform
   );
 
@@ -49,6 +49,9 @@ const
   );
   {$ENDIF}
 
+  cMacOSPlatformNames: array[0..4] of string = (
+    ciOSDevice32Platform, ciOSDevice64Platform, ciOSSimulator32Platform, cOSX32Platform, cOSX64Platform
+  );
   cAppleProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.iOSDevice32, TProjectPlatform.iOSDevice64,
     TProjectPlatform.macOS32, TProjectPlatform.macOS64];
   cMacOSProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.macOS32, TProjectPlatform.macOS64];
