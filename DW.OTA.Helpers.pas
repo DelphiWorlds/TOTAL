@@ -95,13 +95,13 @@ type
     /// </summary>
     class function FindTopMenu(const AMenuName: string; out AMenuItem: TMenuItem): Boolean; static;
     /// <summary>
-    ///  Gets the active mobile device name, if any, for the given platform
-    /// </summary>
-    class function GetActiveMobileDeviceName(const APlatform: string): string; static;
-    /// <summary>
     ///  Gets the active project, if any
     /// </summary>
     class function GetActiveProject: IOTAProject; static;
+    /// <summary>
+    ///  Gets the filename for the active project
+    /// </summary>
+    class function GetActiveProjectFileName: string; static;
     /// <summary>
     ///  Gets the active project options, if any
     /// </summary>
@@ -114,6 +114,10 @@ type
     ///  Gets the output folder for the active project
     /// </summary>
     class function GetActiveProjectOutputDir: string; static;
+    /// <summary>
+    ///  Gets the folder for the active project
+    /// </summary>
+    class function GetActiveProjectPath: string; static;
     /// <summary>
     ///  Gets the active source edtior
     /// </summary>
@@ -137,7 +141,15 @@ type
     /// <summary>
     ///  Gets the projects current connection profile, if any
     /// </summary>
+    class function GetProjectBuildFileName(const AProject: IOTAProject; const AFileName: string): string; static;
+    /// <summary>
+    ///  Gets the projects current connection profile, if any
+    /// </summary>
     class function GetProjectCurrentConnectionProfile(const AProject: IOTAProject): string; static;
+    /// <summary>
+    ///  Gets the projects current mobile device name, if anys
+    /// </summary>
+    class function GetProjectCurrentMobileDeviceName(const AProject: IOTAProject): string; static;
     /// <summary>
     ///  Gets the current platform for the given project
     /// </summary>
@@ -156,6 +168,14 @@ type
     /// </summary>
     class function GetProjectOutputDir(const AProject: IOTAProject): string; static;
     /// <summary>
+    ///  Gets the folder for the given project
+    /// </summary>
+    class function GetProjectPath(const AProject: IOTAProject): string; static;
+    /// <summary>
+    ///  Gets the project platform from the string value
+    /// </summary>
+    class function GetProjectPlatform(const APlatform: string): TProjectPlatform; static;
+    /// <summary>
     ///  Gets the base registry key for the IDE
     /// </summary>
     class function GetRegKey: string; static;
@@ -167,6 +187,14 @@ type
     ///  Indicates whether or not the IDE is closing
     /// </summary>
     class function IsIDEClosing: Boolean; static;
+    /// <summary>
+    ///  Indicates whether or not the platform is iOS
+    /// </summary>
+    class function IsIOSPlatform(const APlatform: string): Boolean; static;
+    /// <summary>
+    ///  Indicates whether or not the platform is Mac/iOS
+    /// </summary>
+    class function IsMacOSPlatform(const APlatform: string): Boolean; static;
     /// <summary>
     ///  Indicates whether or not a platform matches the profile platform
     /// </summary>
@@ -475,38 +503,34 @@ begin
 end;
 *)
 
-class function TOTAHelper.GetActiveMobileDeviceName(const APlatform: string): string;
+class function TOTAHelper.GetProjectCurrentMobileDeviceName(const AProject: IOTAProject): string;
 var
-  LProfileName: string;
-  // LModule: IOTAModule;
-  LProject: IOTAProject;
+  LProfileName, LPlatform: string;
   LNode: IXMLNode;
   I: Integer;
 begin
   Result := '';
-  // LModule := (BorlandIDEServices as IOTAModuleServices).CurrentModule;
-  LProject := GetActiveProject;
-  // if (LModule <> nil) and (LProject <> nil) then
-  if LProject <> nil then
+  if AProject <> nil then
   begin
-    LProfileName := GetProjectCurrentConnectionProfile(LProject);
+    LProfileName := GetProjectCurrentConnectionProfile(AProject);
+    LPlatform := AProject.CurrentPlatform;
     if not LProfileName.IsEmpty then
     begin
-      LNode := (BorlandIDEServices as IOTAProjectFileStorage).GetProjectStorageNode(LProject, 'ActiveMobileDevice', True);
+      LNode := (BorlandIDEServices as IOTAProjectFileStorage).GetProjectStorageNode(AProject, 'ActiveMobileDevice', True);
       if LNode <> nil then
       begin
-        TOSLog.d('ActiveMobileDevice node exists');
+//        TOSLog.d('ActiveMobileDevice node exists');
 //        if LNode.ChildNodes.Count = 0 then
 //          TOSLog.d('No child nodes');
 //        for I := 0 to LNode.ChildNodes.Count - 1 do
 //          TOSLog.d(LNode.ChildNodes.Get(I).NodeName);
         LNode := LNode.ChildNodes.FindNode('P'+ LProfileName);
-        if LNode = nil then
-          TOSLog.d('No child node for ' + LProfileName)
-        else if not LNode.HasAttribute(APlatform) then
-          TOSLog.d('No attribute named ' + APlatform);
-        if (LNode <> nil) and LNode.HasAttribute(APlatform) then
-          Result := LNode.Attributes[APlatform];
+//        if LNode = nil then
+//          TOSLog.d('No child node for ' + LProfileName)
+//        else if not LNode.HasAttribute(LPlatform) then
+//          TOSLog.d('No attribute named ' + LPlatform);
+        if (LNode <> nil) and LNode.HasAttribute(LPlatform) then
+          Result := LNode.Attributes[LPlatform];
       end
       else
         TOSLog.d('No node for ActiveMobileDevice');
@@ -522,6 +546,16 @@ begin
   LGroup := TOTAHelper.GetProjectGroup;
   if LGroup <> nil then
     Result := LGroup.ActiveProject;
+end;
+
+class function TOTAHelper.GetActiveProjectFileName: string;
+var
+  LProject: IOTAProject;
+begin
+  Result := '';
+  LProject := TOTAHelper.GetActiveProject;
+  if LProject <> nil then
+    Result := LProject.FileName;
 end;
 
 class function TOTAHelper.GetProjectCurrentConnectionProfile(const AProject: IOTAProject): string;
@@ -620,12 +654,17 @@ begin
   end;
 end;
 
+class function TOTAHelper.GetProjectPath(const AProject: IOTAProject): string;
+begin
+  Result := TPath.GetDirectoryName(AProject.FileName);
+end;
+
 class function TOTAHelper.GetProjectOutputDir(const AProject: IOTAProject): string;
 var
   LOptions: IOTAProjectOptions;
   LOutputDir: string;
 begin
-  Result := TPath.GetDirectoryName(AProject.FileName);
+  Result := GetProjectPath(AProject);
   LOptions := AProject.ProjectOptions;
   if LOptions <> nil then
   begin
@@ -645,6 +684,17 @@ var
 begin
   LMainForm := GetMainForm;
   Result := (LMainForm = nil) or not TForm(LMainForm).Visible or (csDestroying in LMainForm.ComponentState);
+end;
+
+class function TOTAHelper.IsIOSPlatform(const APlatform: string): Boolean;
+begin
+  Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform) or APlatform.Equals(ciOSSimulator32Platform);
+end;
+
+class function TOTAHelper.IsMacOSPlatform(const APlatform: string): Boolean;
+begin
+  Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform) or APlatform.Equals(ciOSSimulator32Platform)
+    or APlatform.Equals(cOSX32Platform) or APlatform.Equals(cOSX64Platform);
 end;
 
 class function TOTAHelper.IsMatchingProfilePlatform(const APlatform, AProfilePlatform: string): Boolean;
@@ -700,9 +750,20 @@ class function TOTAHelper.GetActiveProjectOutputDir: string;
 var
   LProject: IOTAProject;
 begin
+  Result := '';
   LProject := TOTAHelper.GetActiveProject;
   if LProject <> nil then
     Result := TOTAHelper.GetProjectOutputDir(LProject);
+end;
+
+class function TOTAHelper.GetActiveProjectPath: string;
+var
+  LProject: IOTAProject;
+begin
+  Result := '';
+  LProject := TOTAHelper.GetActiveProject;
+  if LProject <> nil then
+    Result := TOTAHelper.GetProjectPath(LProject);
 end;
 
 class function TOTAHelper.GetActiveSourceEditor: IOTASourceEditor;
@@ -746,16 +807,25 @@ begin
   end;
 end;
 
-class function TOTAHelper.GetProjectCurrentPlatform(const AProject: IOTAProject): TProjectPlatform;
+class function TOTAHelper.GetProjectPlatform(const APlatform: string): TProjectPlatform;
 var
   LPlatform: TProjectPlatform;
 begin
   Result := TProjectPlatform(-1);
   for LPlatform := Low(TProjectPlatform) to High(TProjectPlatform) do
   begin
-    if SameText(AProject.CurrentPlatform, cProjectPlatforms[LPlatform]) then
+    if SameText(APlatform, cProjectPlatforms[LPlatform]) then
       Exit(LPlatform); // <======
   end;
+  if SameText(APlatform, 'Android') then
+    Result := TProjectPlatform.Android32;
+end;
+
+class function TOTAHelper.GetProjectCurrentPlatform(const AProject: IOTAProject): TProjectPlatform;
+begin
+  Result := TProjectPlatform(-1);
+  if AProject <> nil then
+    Result := GetProjectPlatform(AProject.CurrentPlatform);
 end;
 
 class procedure TOTAHelper.GetProjectActiveEffectivePaths(const AProject: IOTAProject; const APaths: TStrings; const ABase: Boolean = False);
@@ -770,6 +840,11 @@ begin
     LBuildConfig := LProjectOptionsConfigs.ActiveConfiguration;
   LBuildConfig.GetValues(sUnitSearchPath, APaths, True);
   APaths.Insert(0, TPath.GetDirectoryName(AProject.FileName));
+end;
+
+class function TOTAHelper.GetProjectBuildFileName(const AProject: IOTAProject; const AFileName: string): string;
+begin
+  Result := TPath.Combine(GetProjectPath(AProject), AFileName);
 end;
 
 class function TOTAHelper.GetEnvironmentOptions: IOTAEnvironmentOptions;
