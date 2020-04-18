@@ -4,7 +4,7 @@ unit DW.OTA.Consts;
 {                                                       }
 {         DelphiWorlds Open Tools API Support           }
 {                                                       }
-{          Copyright(c) 2019 David Nottage              }
+{          Copyright(c) 2020 David Nottage              }
 {              All rights reserved                      }
 {                                                       }
 {*******************************************************}
@@ -21,8 +21,12 @@ uses
 
 const
   cProjectPlatforms: array[TProjectPlatform] of string = (
-    'Android32', 'Android64', ciOSDevice32Platform , ciOSDevice64Platform, ciOSSimulator32Platform, cLinux64Platform, cOSX32Platform, cOSX64Platform,
+    'Android', 'Android64', ciOSDevice32Platform , ciOSDevice64Platform, ciOSSimulator32Platform, cLinux64Platform, cOSX32Platform, cOSX64Platform,
     cWin32Platform, cWin64Platform
+  );
+
+  cProjectPlatformsShort: array[TProjectPlatform] of string = (
+    'Android', 'Android64', 'iOS32' , 'iOS64', 'iOSSim32', 'Linux64', 'macOS32', 'macOS64', 'Win32', 'Win64'
   );
 
   cProjectConfigurations: array[TProjectConfiguration] of string = ('Debug', 'Release');
@@ -55,6 +59,13 @@ const
   cAppleProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.iOSDevice32, TProjectPlatform.iOSDevice64,
     TProjectPlatform.macOS32, TProjectPlatform.macOS64];
   cMacOSProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.macOS32, TProjectPlatform.macOS64];
+  cAndroidProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.Android32, TProjectPlatform.Android64];
+
+  cTabChar = #9;
+  cLineFeedChar = #10;
+  cCarriageReturnChar = #13;
+
+  cValidControlChars: set of Char = [cTabChar, cLineFeedChar, cCarriageReturnChar];
 
 implementation
 
