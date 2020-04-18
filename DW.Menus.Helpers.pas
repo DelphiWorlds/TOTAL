@@ -1,9 +1,17 @@
 unit DW.Menus.Helpers;
 
+{*******************************************************}
+{                                                       }
+{         TOTAL - Terrific Open Tools API Library       }
+{                                                       }
+{*******************************************************}
+
 interface
 
 uses
+  // RTL
   System.Classes,
+  // Vcl
   Vcl.Menus;
 
 type
@@ -18,6 +26,7 @@ type
 implementation
 
 uses
+  // Vcl
   Vcl.ActnList;
 
 { TMenuItemHelper }
