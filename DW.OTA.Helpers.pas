@@ -2,21 +2,16 @@ unit DW.OTA.Helpers;
 
 {*******************************************************}
 {                                                       }
-{         DelphiWorlds Open Tools API Support           }
-{                                                       }
-{          Copyright(c) 2019 David Nottage              }
-{              All rights reserved                      }
+{         TOTAL - Terrific Open Tools API Library       }
 {                                                       }
 {*******************************************************}
-
-{$I DW.GlobalDefines.inc}
 
 interface
 
 uses
   // RTL
-  System.Classes,
-  // Tools
+  System.Classes, System.SysUtils,
+  // Design
   ToolsAPI, PlatformAPI,
   // VCL
   Vcl.Menus, Vcl.Forms,
@@ -46,6 +41,10 @@ type
     ///  Adds a message to a group entitled TOTAL Debug
     /// </summary>
     class procedure AddDebugMessage(const AMsg: string); static;
+    /// <summary>
+    ///  Adds an exception message to a group specified by AGroupName
+    /// </summary>
+    class procedure AddTitleException(const AException: Exception; const AProcess: string; const AGroupName: string = ''); static;
     /// <summary>
     ///  Adds a message to a group specified by AGroupName
     /// </summary>
@@ -155,6 +154,7 @@ type
     /// </summary>
     class function GetProjectCurrentPlatform(const AProject: IOTAProject): TProjectPlatform; static;
     class function GetProjectDeployedFileName(const AProject: IOTAProject): string; static;
+    class function GetProjectDeployedPath(const AProject: IOTAProject): string; static;
     /// <summary>
     ///  Gets the current project group, if any
     /// </summary>
@@ -179,6 +179,10 @@ type
     ///  Gets the base registry key for the IDE
     /// </summary>
     class function GetRegKey: string; static;
+    /// <summary>
+    ///  Gets all the text in a source editor
+    /// </summary>
+    class function GetSourceEditorText(const ASourceEditor: IOTASourceEditor): string; static;
     /// <summary>
     ///  Gets a value from version info for the given key
     /// </summary>
@@ -212,18 +216,24 @@ type
     /// </summary>
     class procedure RegisterThemeForms(const AFormClasses: array of TCustomFormClass); static;
     /// <summary>
+    ///  Sets the projects SDK version
+    /// </summary>
+    class procedure SetProjectSDKVersion(const AProject: IOTAProject; const APlatform, ASDKVersion: string); static;
+    /// <summary>
     ///  Shows the message view in the messages window for the given group
     /// </summary>
     class procedure ShowMessageView(const AGroupName: string = ''); static;
   end;
 
-  // Really only here for debugging purposes
+function ExpandPath(const ABaseDir, ARelativeDir: string): string;
+
+// Really only here for debugging purposes
 function GetEnvironmentVars(const Vars: TStrings; Expand: Boolean): Boolean;
 
 implementation
 
 uses
-  System.SysUtils, System.IOUtils,
+  System.IOUtils,
   XML.XMLIntf,
   DCCStrs,
   Winapi.Windows, Winapi.ShLwApi,
@@ -339,6 +349,11 @@ class procedure TOTAHelper.AddDebugMessage(const AMsg: string);
 begin
   if IsDebug then
     AddTitleMessage(AMsg, 'TOTAL Debug');
+end;
+
+class procedure TOTAHelper.AddTitleException(const AException: Exception; const AProcess: string; const AGroupName: string = '');
+begin
+  AddTitleMessage(Format('%s - %s: %s', [AProcess, AException.ClassName, AException.Message]), AGroupName);
 end;
 
 class procedure TOTAHelper.AddTitleMessage(const AMsg: string; const AGroupName: string = '');
@@ -507,7 +522,7 @@ class function TOTAHelper.GetProjectCurrentMobileDeviceName(const AProject: IOTA
 var
   LProfileName, LPlatform: string;
   LNode: IXMLNode;
-  I: Integer;
+//  I: Integer;
 begin
   Result := '';
   if AProject <> nil then
@@ -567,6 +582,17 @@ begin
     Result := LPlatforms.GetProfile(AProject.CurrentPlatform);
 end;
 
+class procedure TOTAHelper.SetProjectSDKVersion(const AProject: IOTAProject; const APlatform, ASDKVersion: string);
+var
+  LPlatforms: IOTAProjectPlatforms;
+begin
+  if Supports(AProject, IOTAProjectPlatforms, LPlatforms) then
+  begin
+    TOSLog.d('Current SDKVersion for %s is %s, changing to %s', [APlatform, LPlatforms.GetSDKVersion(APlatform), ASDKVersion]);
+    LPlatforms.SetSDKVersion(APlatform, ASDKVersion);
+  end;
+end;
+
 class function TOTAHelper.GetProjectDeployedFileName(const AProject: IOTAProject): string;
 var
   LFileName: string;
@@ -579,6 +605,14 @@ begin
     TProjectPlatform.iOSDevice32, TProjectPlatform.iOSDevice64:
       Result := TPath.GetFileName(LFileName + '.ipa');
   end;
+end;
+
+class function TOTAHelper.GetProjectDeployedPath(const AProject: IOTAProject): string;
+var
+  LFileName: string;
+begin
+  LFileName := AProject.ProjectOptions.TargetName;
+  Result := LFileName.Substring(0, LFileName.LastIndexOf('\'));
 end;
 
 class function TOTAHelper.GetActiveProjectOptions: IOTAProjectOptions;
@@ -683,7 +717,7 @@ var
   LMainForm: TComponent;
 begin
   LMainForm := GetMainForm;
-  Result := (LMainForm = nil) or not TForm(LMainForm).Visible or (csDestroying in LMainForm.ComponentState);
+  Result := Application.Terminated or (LMainForm = nil) or not TForm(LMainForm).Visible or (csDestroying in LMainForm.ComponentState);
 end;
 
 class function TOTAHelper.IsIOSPlatform(const APlatform: string): Boolean;
@@ -743,7 +777,13 @@ var
   LFormClass: TCustomFormClass;
 begin
   for LFormClass in AFormClasses do
+  begin
+    {$IF CompilerVersion < 34}
     (BorlandIDEServices as IOTAIDEThemingServices250).RegisterFormClass(LFormClass);
+    {$ELSE}
+    (BorlandIDEServices as IOTAIDEThemingServices).RegisterFormClass(LFormClass);
+    {$ENDIF}
+  end;
 end;
 
 class function TOTAHelper.GetActiveProjectOutputDir: string;
@@ -790,6 +830,31 @@ begin
       if AModule.GetModuleFileEditor(I).QueryInterface(IOTASourceEditor, Result) = S_OK then
         Break;
     end;
+  end;
+end;
+
+class function TOTAHelper.GetSourceEditorText(const ASourceEditor: IOTASourceEditor): string;
+const
+  cBufferSize = 1024;
+var
+  LReader: IOTAEditReader;
+  LPosition, LRead: Integer;
+  LBuffer: AnsiString;
+begin
+  if ASourceEditor = nil then
+    Exit(''); //<======
+  LReader := ASourceEditor.CreateReader;
+  try
+    LPosition := 0;
+    repeat
+      SetLength(LBuffer, cBufferSize);
+      LRead := LReader.GetText(LPosition, PAnsiChar(LBuffer), cBufferSize);
+      SetLength(LBuffer, LRead);
+      Result := Result + string(LBuffer);
+      Inc(LPosition, LRead);
+    until LRead < cBufferSize;
+  finally
+    LReader := nil;
   end;
 end;
 
