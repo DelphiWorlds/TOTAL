@@ -5,11 +5,14 @@ interface
 implementation
 
 uses
+  // ToolsAPI
   ToolsAPI,
-  Vcl.Menus,
-  DW.OSLog,
-  DW.OTA.Wizard, DW.OTA.IDENotifierOTAWizard, DW.OTA.Helpers,
-  TotalDemo.Consts, TotalDemo.FormEnhancer;
+  // Vcl
+  Vcl.Menus, Vcl.Forms,
+  // TOTAL
+  DW.OTA.Wizard, DW.OTA.IDENotifierOTAWizard, DW.OTA.Helpers, DW.Menus.Helpers,
+  // Demo
+  TotalDemo.Consts, TotalDemo.DockWindowForm;
 
 type
   /// <summary>
@@ -18,7 +21,9 @@ type
   TDemoOTAWizard = class(TIDENotifierOTAWizard)
   private
     FMenuItem: TMenuItem;
+    procedure AddDockWindowMenu;
     procedure AddMenu;
+    procedure DockWindowActionHandler(Sender: TObject);
   protected
     class function GetWizardName: string; override;
   protected
@@ -38,7 +43,9 @@ type
 constructor TDemoOTAWizard.Create;
 begin
   inherited;
+  TOTAHelper.RegisterThemeForms([TDockWindowForm]);
   AddMenu;
+  AddDockWindowMenu;
 end;
 
 destructor TDemoOTAWizard.Destroy;
@@ -61,6 +68,24 @@ begin
   end;
 end;
 
+procedure TDemoOTAWizard.AddDockWindowMenu;
+var
+  LMenuItem: TMenuItem;
+begin
+  LMenuItem := TMenuItem.CreateWithAction(FMenuItem, 'Dock Window', DockWindowActionHandler);
+  FMenuItem.Insert(FMenuItem.Count, LMenuItem);
+end;
+
+procedure TDemoOTAWizard.DockWindowActionHandler(Sender: TObject);
+begin
+  if DockWindowForm = nil then
+  begin
+    DockWindowForm := TDockWindowForm.Create(Application);
+    TOTAHelper.ApplyTheme(DockWindowForm);
+  end;
+  DockWindowForm.Show;
+end;
+
 procedure TDemoOTAWizard.IDEStarted;
 begin
   inherited;
@@ -76,8 +101,7 @@ end;
 procedure TDemoOTAWizard.ActiveFormChanged;
 begin
   inherited;
-  // The active form has changed, so the TFormEnhancer is used to check whether modifications should be made
-  TFormEnhancer.EnhanceActiveForm;
+  
 end;
 
 // Unique identifier
