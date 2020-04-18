@@ -2,21 +2,16 @@ unit DW.OTA.Consts;
 
 {*******************************************************}
 {                                                       }
-{         DelphiWorlds Open Tools API Support           }
-{                                                       }
-{          Copyright(c) 2020 David Nottage              }
-{              All rights reserved                      }
+{         TOTAL - Terrific Open Tools API Library       }
 {                                                       }
 {*******************************************************}
-
-{$I DW.GlobalDefines.inc}
 
 interface
 
 uses
   // Design
   PlatformConst, {$IF Defined(EXPERT)} ToolsAPI, {$ENDIF}
-  // DW
+  // TOTAL
   DW.OTA.Types;
 
 const
