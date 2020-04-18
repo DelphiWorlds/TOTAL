@@ -1,37 +1,50 @@
 unit DW.OTA.Notifiers;
 
+{*******************************************************}
+{                                                       }
+{         TOTAL - Terrific Open Tools API Library       }
+{                                                       }
+{*******************************************************}
+
 interface
 
 uses
-  ToolsAPI;
+  // RTL
+  System.Generics.Collections, System.Classes,
+  // Design
+  DockForm, ToolsAPI;
 
 type
-  TIDENotifier = class(TInterfacedObject, IOTAIDENotifier)
-  private
-    FIndex: Integer;
-  public
-    { IOTAIDENotifier }
-    procedure AfterCompile(Succeeded: Boolean); virtual;
-    procedure AfterSave; virtual;
-    procedure BeforeCompile(const Project: IOTAProject; var Cancel: Boolean); virtual;
-    procedure BeforeSave; virtual;
-    procedure Destroyed; virtual;
-    procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean); virtual;
-    procedure Modified; virtual;
-  public
-    constructor Create;
-    destructor Destroy; override;
+  ITOTALNotifier = interface(IInterface)
+    ['{85CA09CC-370C-4FAB-9A42-4687A6550328}']
+    function GetIndex: Integer;
+    procedure AddNotifier;
+    procedure RemoveNotifier;
+    procedure SetIndex(const AValue: Integer);
   end;
 
-  TDebuggerNotifier = class(TNotifierObject, IOTADebuggerNotifier, IOTADebuggerNotifier90)
+  ITOTALModuleTracker = interface(IInterface)
+    ['{38C0E273-C75A-450A-8F7E-5787BEF9A348}']
+    procedure AfterRename(const OldFileName, NewFileName: string);
+  end;
+
+  TTOTALNotifier = class(TNotifierObject, ITOTALNotifier)
   private
     FIndex: Integer;
+  protected
+    { ITOTALNotifier }
+    procedure AddNotifier; virtual; abstract;
+    function GetIndex: Integer;
+    procedure RemoveNotifier; virtual; abstract;
+    procedure SetIndex(const AValue: Integer);
+  protected
+    property Index: Integer read GetIndex write SetIndex;
   public
-    { IOTANotifier }
-    procedure AfterSave;
-    procedure BeforeSave;
-    procedure Destroyed;
-    procedure Modified;
+    constructor Create;
+  end;
+
+  TDebuggerNotifier = class(TTOTALNotifier, IOTADebuggerNotifier, IOTADebuggerNotifier90)
+  protected
     { IOTADebuggerNotifier }
     procedure ProcessCreated(const Process: IOTAProcess); virtual;
     procedure ProcessDestroyed(const Process: IOTAProcess); virtual;
@@ -44,88 +57,107 @@ type
     function BeforeProgramLaunch(const Project: IOTAProject): Boolean; virtual;
     procedure ProcessMemoryChanged; virtual;
   public
-    constructor Create;
-    destructor Destroy; override;
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
+  end;
+
+  TIDENotifier = class(TTOTALNotifier, IOTAIDENotifier)
+  protected
+    { IOTAIDENotifier }
+    procedure AfterCompile(Succeeded: Boolean); virtual;
+    procedure BeforeCompile(const Project: IOTAProject; var Cancel: Boolean); virtual;
+    procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean); virtual;
+  public
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
+  end;
+
+  TEditServicesNotifier = class(TTOTALNotifier, INTAEditServicesNotifier)
+  protected
+    procedure EditWindowClosed(const EditWindow: INTAEditWindow); virtual;
+    procedure EditWindowOpened(const EditWindow: INTAEditWindow); virtual;
+  protected
+    { INTAEditServicesNotifier }
+    procedure DockFormRefresh(const EditWindow: INTAEditWindow; DockForm: TDockableForm);
+    procedure DockFormUpdated(const EditWindow: INTAEditWindow; DockForm: TDockableForm);
+    procedure DockFormVisibleChanged(const EditWindow: INTAEditWindow; DockForm: TDockableForm);
+    procedure EditorViewActivated(const EditWindow: INTAEditWindow; const EditView: IOTAEditView); virtual;
+    procedure EditorViewModified(const EditWindow: INTAEditWindow; const EditView: IOTAEditView); virtual;
+    procedure WindowActivated(const EditWindow: INTAEditWindow);
+    procedure WindowCommand(const EditWindow: INTAEditWindow; Command, Param: Integer; var Handled: Boolean);
+    procedure WindowNotification(const EditWindow: INTAEditWindow; Operation: TOperation);
+    procedure WindowShow(const EditWindow: INTAEditWindow; Show, LoadedFromDesktop: Boolean);
+  public
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
+  end;
+
+  TNonRefInterfacedObject = class(TObject, IInterface)
+  protected
+    function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
+    function _AddRef: Integer; stdcall;
+    function _Release: Integer; stdcall;
+  end;
+
+  TModuleNotifier = class(TNonRefInterfacedObject, IOTANotifier, IOTAModuleNotifier, IOTAModuleNotifier80, IOTAModuleNotifier90)
+  private
+    [Weak] FTracker: ITOTALModuleTracker;
+  protected
+    { IOTANotifier }
+    procedure AfterSave;
+    procedure BeforeSave;
+    procedure Destroyed;
+    procedure Modified;
+    { IOTAModuleNotifier }
+    function CheckOverwrite: Boolean;
+    procedure ModuleRenamed(const ANewName: string);
+    { IOTAModuleNotifier80 }
+    function AllowSave: Boolean;
+    function GetOverwriteFileName(Index: Integer): string;
+    function GetOverwriteFileNameCount: Integer;
+    procedure SetSaveFileName(const FileName: string);
+    { IOTAModuleNotifier90 }
+    procedure AfterRename(const OldFileName, NewFileName: string);
+    procedure BeforeRename(const OldFileName, NewFileName: string);
+  public
+    constructor Create(const ATracker: ITOTALModuleTracker);
   end;
 
 implementation
 
-{ TIDENotifier }
+{ TTOTALNotifier }
 
-constructor TIDENotifier.Create;
+constructor TTOTALNotifier.Create;
 begin
-  inherited Create;
-  FIndex := (BorlandIDEServices as IOTAServices).AddNotifier(Self);
-end;
-
-destructor TIDENotifier.Destroy;
-begin
-  (BorlandIDEServices as IOTAServices).RemoveNotifier(FIndex);
   inherited;
+  AddNotifier;
 end;
 
-procedure TIDENotifier.Destroyed;
+function TTOTALNotifier.GetIndex: Integer;
 begin
-  //
+  Result := FIndex;
 end;
 
-procedure TIDENotifier.AfterCompile(Succeeded: Boolean);
+procedure TTOTALNotifier.SetIndex(const AValue: Integer);
 begin
-  //
-end;
-
-procedure TIDENotifier.AfterSave;
-begin
-  //
-end;
-
-procedure TIDENotifier.BeforeCompile(const Project: IOTAProject; var Cancel: Boolean);
-begin
-  //
-end;
-
-procedure TIDENotifier.BeforeSave;
-begin
-  //
-end;
-
-procedure TIDENotifier.FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean);
-begin
-  //
-end;
-
-procedure TIDENotifier.Modified;
-begin
-  // Apparently this is never called?
+  FIndex := AValue;
 end;
 
 { TDebuggerNotifier }
 
-constructor TDebuggerNotifier.Create;
+procedure TDebuggerNotifier.AddNotifier;
 begin
-  inherited;
-  FIndex := (BorlandIDEServices as IOTADebuggerServices).AddNotifier(Self);
+  Index := (BorlandIDEServices as IOTADebuggerServices).AddNotifier(Self);
 end;
 
-destructor TDebuggerNotifier.Destroy;
+procedure TDebuggerNotifier.RemoveNotifier;
 begin
-  (BorlandIDEServices as IOTADebuggerServices).RemoveNotifier(FIndex);
-  inherited;
-end;
-
-procedure TDebuggerNotifier.AfterSave;
-begin
-  //
+  (BorlandIDEServices as IOTADebuggerServices).RemoveNotifier(Index)
 end;
 
 function TDebuggerNotifier.BeforeProgramLaunch(const Project: IOTAProject): Boolean;
 begin
   Result := True;
-end;
-
-procedure TDebuggerNotifier.BeforeSave;
-begin
-  //
 end;
 
 procedure TDebuggerNotifier.BreakpointAdded(const Breakpoint: IOTABreakpoint);
@@ -148,16 +180,6 @@ begin
   //
 end;
 
-procedure TDebuggerNotifier.Destroyed;
-begin
-  //
-end;
-
-procedure TDebuggerNotifier.Modified;
-begin
-  //
-end;
-
 procedure TDebuggerNotifier.ProcessCreated(const Process: IOTAProcess);
 begin
   //
@@ -174,6 +196,194 @@ begin
 end;
 
 procedure TDebuggerNotifier.ProcessStateChanged(const Process: IOTAProcess);
+begin
+  //
+end;
+
+{ TIDENotifier }
+
+procedure TIDENotifier.AddNotifier;
+begin
+  Index := (BorlandIDEServices as IOTAServices).AddNotifier(Self);
+end;
+
+procedure TIDENotifier.RemoveNotifier;
+begin
+  (BorlandIDEServices as IOTAServices).RemoveNotifier(Index);
+end;
+
+procedure TIDENotifier.AfterCompile(Succeeded: Boolean);
+begin
+  //
+end;
+
+procedure TIDENotifier.BeforeCompile(const Project: IOTAProject; var Cancel: Boolean);
+begin
+  //
+end;
+
+procedure TIDENotifier.FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean);
+begin
+  //
+end;
+
+{ TEditServicesNotifier }
+
+procedure TEditServicesNotifier.AddNotifier;
+begin
+  Index := (BorlandIDEServices as IOTAEditorServices).AddNotifier(Self);
+end;
+
+procedure TEditServicesNotifier.RemoveNotifier;
+begin
+  (BorlandIDEServices as IOTAEditorServices).RemoveNotifier(Index);
+end;
+
+procedure TEditServicesNotifier.DockFormRefresh(const EditWindow: INTAEditWindow; DockForm: TDockableForm);
+begin
+
+end;
+
+procedure TEditServicesNotifier.DockFormUpdated(const EditWindow: INTAEditWindow; DockForm: TDockableForm);
+begin
+
+end;
+
+procedure TEditServicesNotifier.DockFormVisibleChanged(const EditWindow: INTAEditWindow; DockForm: TDockableForm);
+begin
+
+end;
+
+procedure TEditServicesNotifier.EditorViewActivated(const EditWindow: INTAEditWindow; const EditView: IOTAEditView);
+begin
+
+end;
+
+procedure TEditServicesNotifier.EditorViewModified(const EditWindow: INTAEditWindow; const EditView: IOTAEditView);
+begin
+
+end;
+
+procedure TEditServicesNotifier.EditWindowClosed(const EditWindow: INTAEditWindow);
+begin
+
+end;
+
+procedure TEditServicesNotifier.EditWindowOpened(const EditWindow: INTAEditWindow);
+begin
+
+end;
+
+procedure TEditServicesNotifier.WindowActivated(const EditWindow: INTAEditWindow);
+begin
+
+end;
+
+procedure TEditServicesNotifier.WindowCommand(const EditWindow: INTAEditWindow; Command, Param: Integer; var Handled: Boolean);
+begin
+
+end;
+
+procedure TEditServicesNotifier.WindowNotification(const EditWindow: INTAEditWindow; Operation: TOperation);
+begin
+  case Operation of
+    opInsert:
+      EditWindowOpened(EditWindow);
+    opRemove:
+      EditWindowClosed(EditWindow);
+  end;
+end;
+
+procedure TEditServicesNotifier.WindowShow(const EditWindow: INTAEditWindow; Show, LoadedFromDesktop: Boolean);
+begin
+
+end;
+
+{ TNonRefInterfacedObject }
+
+function TNonRefInterfacedObject.QueryInterface(const IID: TGUID; out Obj): HResult;
+begin
+  if GetInterface(IID, Obj) then
+    Result := S_OK
+  else
+    Result := E_NOINTERFACE;
+end;
+
+function TNonRefInterfacedObject._AddRef: Integer;
+begin
+  Result := -1;
+end;
+
+function TNonRefInterfacedObject._Release: Integer;
+begin
+  Result := -1;
+end;
+
+{ TModuleNotifier }
+
+constructor TModuleNotifier.Create(const ATracker: ITOTALModuleTracker);
+begin
+  inherited Create;
+  FTracker := ATracker;
+end;
+
+procedure TModuleNotifier.Destroyed;
+begin
+  //
+end;
+
+procedure TModuleNotifier.AfterRename(const OldFileName, NewFileName: String);
+begin
+  if FTracker <> nil then
+    FTracker.AfterRename(OldFileName, NewFileName);
+end;
+
+procedure TModuleNotifier.AfterSave;
+begin
+
+end;
+
+function TModuleNotifier.AllowSave: Boolean;
+begin
+  Result := True;
+end;
+
+procedure TModuleNotifier.BeforeRename(const OldFileName, NewFileName: String);
+begin
+  //
+end;
+
+procedure TModuleNotifier.BeforeSave;
+begin
+  //
+end;
+
+function TModuleNotifier.CheckOverwrite: Boolean;
+begin
+  Result := True;
+end;
+
+function TModuleNotifier.GetOverwriteFileName(Index: Integer): String;
+begin
+  Result := '';
+end;
+
+function TModuleNotifier.GetOverwriteFileNameCount: Integer;
+begin
+  Result := 0;
+end;
+
+procedure TModuleNotifier.Modified;
+begin
+  //
+end;
+
+procedure TModuleNotifier.ModuleRenamed(const ANewName: string);
+begin
+  //
+end;
+
+procedure TModuleNotifier.SetSaveFileName(const FileName: String);
 begin
   //
 end;
