@@ -132,7 +132,7 @@ end;
 
 procedure TIDENotifier.BeforeCompile(const Project: IOTAProject; var Cancel: Boolean);
 begin
-  //
+  FWizard.IDENotifierBeforeCompile(Project, False, Cancel);
 end;
 
 procedure TIDENotifier.BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean);
