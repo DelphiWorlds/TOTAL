@@ -2,14 +2,9 @@ unit DW.OTA.Wizard;
 
 {*******************************************************}
 {                                                       }
-{         DelphiWorlds Open Tools API Support           }
-{                                                       }
-{          Copyright(c) 2019 David Nottage              }
-{              All rights reserved                      }
+{         TOTAL - Terrific Open Tools API Library       }
 {                                                       }
 {*******************************************************}
-
-{$I DW.GlobalDefines.inc}
 
 interface
 
@@ -25,8 +20,14 @@ uses
 
 type
   TUserRegistry = class(TRegistry)
+  private
+    FRootPath: string;
+  protected
+    function FindNextKeyIndex(const AKeys: TStrings; const AKey: string): Integer;
   public
     constructor Create;
+    function OpenSubKey(const APath: string; const ACanCreate: Boolean =  False): Boolean;
+    procedure ReadKeys(const APath: string; const AKeys: TStrings);
   end;
 
   /// <summary>
@@ -36,6 +37,7 @@ type
   private
     class var FReg: TRegistry;
     class var FEnvVars: TStrings;
+    class constructor CreateClass;
     class destructor DestroyClass;
   private
     function GetEnvVars: TStrings;
@@ -44,13 +46,16 @@ type
     procedure ConfigChanged; virtual;
     procedure FileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string); virtual;
     function GetRSVersion: string;
-    procedure GetSearchPaths(const APlatform: string; const APaths: TStrings; const AAdd: Boolean = False);
+    procedure IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean); virtual;
     procedure IDEStarted; virtual;
     procedure Modification; virtual;
   protected
     class property Reg: TRegistry read FReg;
   protected
     property EnvVars: TStrings read GetEnvVars;
+  public
+    class procedure GetEffectivePaths(const APaths: TStrings; const ABase: Boolean = False);
+    class procedure GetSearchPaths(const APlatform: string; const APaths: TStrings; const AAdd: Boolean = False);
   public
     constructor Create; virtual;
   end;
@@ -93,10 +98,6 @@ type
     /// </summary>
     class function GetWizardName: string; virtual;
     /// <summary>
-    ///   Override this function if necessary to provide the add-in's version (default is Major.Minor.Release)
-    /// </summary>
-    class function GetWizardVersion: string; virtual;
-    /// <summary>
     ///   Call RegisterSplash in the initialization section of your TOTAWizard descendants unit
     /// </summary>
     class procedure RegisterSplash;
@@ -118,10 +119,15 @@ type
     ///   Override this function with the description of your add-in
     /// </summary>
     function GetWizardDescription: string; virtual;
+    procedure IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean);
     /// <summary>
     ///   Override this function to respond when the IDE has started
     /// </summary>
     procedure IDEStarted; virtual;
+    /// <summary>
+    ///   Override this function to respond when the IDE has stopped
+    /// </summary>
+    procedure IDEStopped; virtual;
     /// <summary>
     ///   Override this function to take advantage of the IDE timer
     /// </summary>
@@ -155,6 +161,10 @@ type
     /// </summary>
     class property Wizard: TOTAWizard read FWizard;
   public
+    /// <summary>
+    ///   Override this function if necessary to provide the add-in's version (default is Major.Minor.Release)
+    /// </summary>
+    class function GetWizardVersion: string; virtual;
     /// <summary>
     ///   Call InitializeWizard from the function named as WizardEntryPoint that is exported by your add-in
     /// </summary>
@@ -214,6 +224,39 @@ begin
     LAccess := LAccess or KEY_WOW64_32KEY;
   inherited Create(LAccess);
   RootKey := HKEY_CURRENT_USER;
+  FRootPath := TOTAHelper.GetRegKey;
+end;
+
+procedure TUserRegistry.ReadKeys(const APath: string; const AKeys: TStrings);
+begin
+  AKeys.Clear;
+  if OpenSubKey(APath) then
+  try
+    GetKeyNames(AKeys);
+  finally
+    CloseKey;
+  end;
+end;
+
+function TUserRegistry.OpenSubKey(const APath: string; const ACanCreate: Boolean =  False): Boolean;
+begin
+  Result := OpenKey(FRootPath + APath, ACanCreate);
+end;
+
+function TUserRegistry.FindNextKeyIndex(const AKeys: TStrings; const AKey: string): Integer;
+var
+  I, LKeyIndex: Integer;
+  LKeyName: string;
+begin
+  Result := -1;
+  for I := 0 to AKeys.Count - 1 do
+  begin
+    LKeyName := AKeys[I];
+    if LKeyName.StartsWith(AKey) and TryStrToInt(LKeyName.Substring(Length(AKey)), LKeyIndex) and (LKeyIndex > Result) then
+      Result := LKeyIndex;
+  end;
+  if Result > -1 then
+    Inc(Result);
 end;
 
 { TWizard }
@@ -221,10 +264,13 @@ end;
 constructor TWizard.Create;
 begin
   inherited;
-  if FReg = nil then
-    FReg := TUserRegistry.Create;
-  if FEnvVars = nil then
-    FEnvVars := TStringList.Create;
+  //
+end;
+
+class constructor TWizard.CreateClass;
+begin
+  FReg := TUserRegistry.Create;
+  FEnvVars := TStringList.Create;
 end;
 
 class destructor TWizard.DestroyClass;
@@ -249,7 +295,24 @@ begin
   Result := GetEnvironmentVariable('ProductVersion');
 end;
 
-procedure TWizard.GetSearchPaths(const APlatform: string; const APaths: TStrings; const AAdd: Boolean = False);
+class procedure TWizard.GetEffectivePaths(const APaths: TStrings; const ABase: Boolean = False);
+var
+  LPlatform: string;
+  LProject: IOTAProject;
+begin
+  LProject := TOTAHelper.GetActiveProject;
+  if LProject <> nil then
+  begin
+    TOTAHelper.GetProjectActiveEffectivePaths(LProject, APaths, ABase);
+    LPlatform := LProject.CurrentPlatform;
+    if LPlatform.Equals('Android') then
+      LPlatform := 'Android32';
+    GetSearchPaths(LPlatform, APaths, True);
+    TOTAHelper.ExpandPaths(APaths, LProject);
+  end;
+end;
+
+class procedure TWizard.GetSearchPaths(const APlatform: string; const APaths: TStrings; const AAdd: Boolean = False);
 var
   LPaths: TStrings;
 begin
@@ -285,6 +348,11 @@ begin
   //
 end;
 
+procedure TWizard.IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean);
+begin
+  //
+end;
+
 procedure TWizard.IDEStarted;
 begin
   //
@@ -298,11 +366,11 @@ begin
   {$IFDEF DEBUG}
   TOTAHelper.IsDebug := True;
   {$ENDIF}
+  RegisterPlugin;
   FIDETimer := TTimer.Create(nil);
   FIDETimer.Interval := 50;
   FIDETimer.OnTimer := IDETimerIntervalHandler;
   FIDETimer.Enabled := True;
-  RegisterPlugin;
 end;
 
 destructor TOTAWizard.Destroy;
@@ -324,7 +392,23 @@ begin
   end;
 end;
 
+procedure TOTAWizard.IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean);
+var
+  LWizard: TWizard;
+begin
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+      LWizard.IDEAfterCompile(AProject, ASucceeded, AIsCodeInsight);
+  end;
+end;
+
 procedure TOTAWizard.IDEStarted;
+begin
+  //
+end;
+
+procedure TOTAWizard.IDEStopped;
 begin
   //
 end;
@@ -338,15 +422,20 @@ procedure TOTAWizard.IDETimerIntervalHandler(Sender: TObject);
 var
   LMainForm: TComponent;
 begin
-  LMainForm := Application.FindComponent('AppBuilder');
-  if not FIsIDEStarted and (LMainForm is TForm) and TForm(LMainForm).Visible then
-    NotifyIDEStarted;
-  if Screen.ActiveForm <> FActiveForm then
+  if not Application.Terminated then
   begin
-    FActiveForm := Screen.ActiveForm;
-    DoActiveFormChanged;
-  end;
-  IDETimer;
+    LMainForm := Application.FindComponent('AppBuilder');
+    if not FIsIDEStarted and (LMainForm is TForm) and TForm(LMainForm).Visible then
+      NotifyIDEStarted;
+    if Screen.ActiveForm <> FActiveForm then
+    begin
+      FActiveForm := Screen.ActiveForm;
+      DoActiveFormChanged;
+    end;
+    IDETimer;
+  end
+  else
+    IDEStopped;
 end;
 
 procedure TOTAWizard.DoActiveFormChanged;
@@ -480,10 +569,18 @@ begin
 end;
 
 class function TOTAWizard.GetWizardVersion: string;
+var
+  LBuild: string;
 begin
   Result := TOSDevice.GetPackageVersion;
   if TOSDevice.IsBeta then
-    Result := Result + ' (Beta)';
+  begin
+    LBuild := TOSDevice.GetPackageBuild;
+    if not LBuild.Equals('0') then
+      Result := Format('%s (Beta %s)', [Result, LBuild])
+    else
+      Result := Format('%s (Beta)', [Result]);
+  end;
 end;
 
 procedure TOTAWizard.RegisterPlugin;
