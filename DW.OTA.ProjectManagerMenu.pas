@@ -1,24 +1,32 @@
 unit DW.OTA.ProjectManagerMenu;
 
+{*******************************************************}
+{                                                       }
+{         TOTAL - Terrific Open Tools API Library       }
+{                                                       }
+{*******************************************************}
+
 interface
 
 uses
+  // RTL
   System.Classes, System.SysUtils,
-  ToolsAPI;
+  // Design
+  ToolsAPI,
+  // TOTAL
+  DW.OTA.Notifiers;
 
 type
   TProjectManagerMenu = class;
 
-  TProjectManagerMenuNotifier = class(TNotifierObject, IUnknown, IOTANotifier, IOTAProjectMenuItemCreatorNotifier)
-  private
-    FIndex: Integer;
+  TProjectManagerMenuNotifier = class(TTOTALNotifier, IUnknown, IOTANotifier, IOTAProjectMenuItemCreatorNotifier)
   protected
     procedure AddMenuItem(const AItem: TProjectManagerMenu; const APosition: Integer);
     procedure DoAddMenu(const AProject: IOTAProject; const AIdentList: TStrings; const AProjectManagerMenuList: IInterfaceList;
       AIsMultiSelect: Boolean); virtual;
     function FindItem(const AProjectManagerMenuList: IInterfaceList; const AVerb: string): Integer;
   public
-    { IOTANotifier}
+    { IOTANotifier }
     procedure AfterSave;
     procedure BeforeSave;
     procedure Destroyed;
@@ -29,6 +37,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
   end;
 
   TProjectManagerMenu = class(TNotifierObject, IOTALocalMenu, IOTAProjectManagerMenu)
@@ -83,13 +93,23 @@ uses
 constructor TProjectManagerMenuNotifier.Create;
 begin
   inherited;
-  FIndex := (BorlandIDEServices as IOTAProjectManager).AddMenuItemCreatorNotifier(Self);
+  // FIndex := (BorlandIDEServices as IOTAProjectManager).AddMenuItemCreatorNotifier(Self);
 end;
 
 destructor TProjectManagerMenuNotifier.Destroy;
 begin
-  (BorlandIDEServices as IOTAProjectManager).RemoveMenuItemCreatorNotifier(FIndex);
+  // (BorlandIDEServices as IOTAProjectManager).RemoveMenuItemCreatorNotifier(FIndex);
   inherited;
+end;
+
+procedure TProjectManagerMenuNotifier.AddNotifier;
+begin
+  Index := (BorlandIDEServices as IOTAProjectManager).AddMenuItemCreatorNotifier(Self);
+end;
+
+procedure TProjectManagerMenuNotifier.RemoveNotifier;
+begin
+  (BorlandIDEServices as IOTAProjectManager).RemoveMenuItemCreatorNotifier(Index);
 end;
 
 procedure TProjectManagerMenuNotifier.DoAddMenu(const AProject: IOTAProject; const AIdentList: TStrings;
