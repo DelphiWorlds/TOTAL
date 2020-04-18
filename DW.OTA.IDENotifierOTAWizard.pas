@@ -2,14 +2,9 @@ unit DW.OTA.IDENotifierOTAWizard;
 
 {*******************************************************}
 {                                                       }
-{         DelphiWorlds Open Tools API Support           }
-{                                                       }
-{          Copyright(c) 2019 David Nottage              }
-{              All rights reserved                      }
+{         TOTAL - Terrific Open Tools API Library       }
 {                                                       }
 {*******************************************************}
-
-{$I DW.GlobalDefines.inc}
 
 interface
 
@@ -17,7 +12,7 @@ uses
   // Design
   ToolsAPI,
   // DW
-  DW.OTA.Wizard;
+  DW.OTA.Wizard, DW.OTA.Notifiers;
 
 type
   TIDENotifierOTAWizard = class;
@@ -25,22 +20,28 @@ type
   /// <summary>
   ///  Class for forwarding IDE notifications to the wizard
   /// </summary>
-  TIDENotifier = class(TInterfacedObject, IOTAIDENotifier)
+  TIDENotifier = class(TTOTALNotifier, IOTAIDENotifier, IOTAIDENotifier80, ITOTALNotifier)
   private
-    FIndex: Integer;
-    FWizard: TIDENotifierOTAWizard;
+    [Weak] FWizard: TIDENotifierOTAWizard;
   protected
     { IOTAIDENotifier }
-    procedure AfterCompile(Succeeded: Boolean);
+    procedure AfterCompile(Succeeded: Boolean); overload;
     procedure AfterSave;
-    procedure BeforeCompile(const Project: IOTAProject; var Cancel: Boolean);
+    procedure BeforeCompile(const Project: IOTAProject; var Cancel: Boolean); overload;
     procedure BeforeSave;
     procedure Destroyed;
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean);
     procedure Modified;
+    { IOTAIDENotifier50 }
+    procedure AfterCompile(Succeeded: Boolean; IsCodeInsight: Boolean); overload;
+    procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean); overload;
+    { IOTAIDENotifier80 }
+    procedure AfterCompile(const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean); overload;
   public
     constructor Create(const AWizard: TIDENotifierOTAWizard);
     destructor Destroy; override;
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
   end;
 
   /// <summary>
@@ -48,12 +49,13 @@ type
   /// </summary>
   TIDENotifierOTAWizard = class(TOTAWizard)
   private
-    FIDENotifier: TIDENotifier;
+    FIDENotifier: ITOTALNotifier;
+    [Weak] FProject: IOTAProject;
   protected
     /// <summary>
     ///   Override IDENotifierAfterCompile to be notified when a compile has finished
     /// </summary>
-    procedure IDENotifierAfterCompile(Succeeded: Boolean); virtual;
+    procedure IDENotifierAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean); virtual;
     /// <summary>
     ///   Override IDENotifierAfterSave to be notified after a file is saved
     /// </summary>
@@ -61,7 +63,7 @@ type
     /// <summary>
     ///   Override IDENotifierBeforeCompile to be notified when a compile is about to start
     /// </summary>
-    procedure IDENotifierBeforeCompile(const Project: IOTAProject; var Cancel: Boolean); virtual;
+    procedure IDENotifierBeforeCompile(const AProject: IOTAProject; const AIsCodeInsight: Boolean; var ACancel: Boolean); virtual;
     /// <summary>
     ///   Override IDENotifierAfterSave to be notified when a file is about to be saved
     /// </summary>
@@ -71,6 +73,7 @@ type
     ///   Override IDENotifierFileNotification to be notified of a TOTAFileNotification
     /// </summary>
     procedure IDENotifierFileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string); virtual;
+    procedure IDEStopped; override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -78,22 +81,17 @@ type
 
 implementation
 
-uses
-  DW.OSLog;
-
 { TIDENotifier }
 
 constructor TIDENotifier.Create(const AWizard: TIDENotifierOTAWizard);
 begin
   inherited Create;
   FWizard := AWizard;
-  FIndex := (BorlandIDEServices as IOTAServices).AddNotifier(Self);
 end;
 
 destructor TIDENotifier.Destroy;
 begin
-  TOSLog.d('TIDENotifier.Destroy');
-  (BorlandIDEServices as IOTAServices).RemoveNotifier(FIndex);
+  //
   inherited;
 end;
 
@@ -102,9 +100,29 @@ begin
   FWizard.IDENotifierDestroyed;
 end;
 
+procedure TIDENotifier.AddNotifier;
+begin
+  Index := (BorlandIDEServices as IOTAServices).AddNotifier(Self);
+end;
+
+procedure TIDENotifier.RemoveNotifier;
+begin
+  (BorlandIDEServices as IOTAServices).RemoveNotifier(Index);
+end;
+
 procedure TIDENotifier.AfterCompile(Succeeded: Boolean);
 begin
-  FWizard.IDENotifierAfterCompile(Succeeded);
+  //
+end;
+
+procedure TIDENotifier.AfterCompile(const Project: IOTAProject; Succeeded, IsCodeInsight: Boolean);
+begin
+  FWizard.IDENotifierAfterCompile(Project, Succeeded, IsCodeInsight);
+end;
+
+procedure TIDENotifier.AfterCompile(Succeeded, IsCodeInsight: Boolean);
+begin
+  //
 end;
 
 procedure TIDENotifier.AfterSave;
@@ -114,7 +132,12 @@ end;
 
 procedure TIDENotifier.BeforeCompile(const Project: IOTAProject; var Cancel: Boolean);
 begin
-  FWizard.IDENotifierBeforeCompile(Project, Cancel);
+  //
+end;
+
+procedure TIDENotifier.BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean);
+begin
+  FWizard.IDENotifierBeforeCompile(Project, IsCodeInsight, Cancel);
 end;
 
 procedure TIDENotifier.BeforeSave;
@@ -146,9 +169,15 @@ begin
   inherited;
 end;
 
-procedure TIDENotifierOTAWizard.IDENotifierAfterCompile(Succeeded: Boolean);
+procedure TIDENotifierOTAWizard.IDEStopped;
 begin
-  //
+  inherited;
+  // FIDENotifier.RemoveNotifier;
+end;
+
+procedure TIDENotifierOTAWizard.IDENotifierAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean);
+begin
+  IDEAfterCompile(AProject, ASucceeded, AIsCodeInsight);
 end;
 
 procedure TIDENotifierOTAWizard.IDENotifierAfterSave;
@@ -156,7 +185,7 @@ begin
   //
 end;
 
-procedure TIDENotifierOTAWizard.IDENotifierBeforeCompile(const Project: IOTAProject; var Cancel: Boolean);
+procedure TIDENotifierOTAWizard.IDENotifierBeforeCompile(const AProject: IOTAProject; const AIsCodeInsight: Boolean; var ACancel: Boolean);
 begin
   //
 end;
