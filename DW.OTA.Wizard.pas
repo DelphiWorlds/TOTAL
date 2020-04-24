@@ -11,36 +11,16 @@ interface
 uses
   // RTL
   System.Generics.Collections, System.Classes,
-  // Windows
-  System.Win.Registry,
   // Design
   ToolsAPI,
   // VCL
   Vcl.Forms, Vcl.ExtCtrls;
 
 type
-  TUserRegistry = class(TRegistry)
-  private
-    FRootPath: string;
-  protected
-    function FindNextKeyIndex(const AKeys: TStrings; const AKey: string): Integer;
-  public
-    constructor Create;
-    function OpenSubKey(const APath: string; const ACanCreate: Boolean =  False): Boolean;
-    procedure ReadKeys(const APath: string; const AKeys: TStrings);
-  end;
-
   /// <summary>
   ///  Base Wizard. Create descendants of this class to act as "sub-wizards" of your OTA Wizard
   /// </summary>
   TWizard = class(TInterfacedObject)
-  private
-    class var FReg: TRegistry;
-    class var FEnvVars: TStrings;
-    class constructor CreateClass;
-    class destructor DestroyClass;
-  private
-    function GetEnvVars: TStrings;
   protected
     procedure ActiveFormChanged; virtual;
     procedure ConfigChanged; virtual;
@@ -49,10 +29,6 @@ type
     procedure IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean); virtual;
     procedure IDEStarted; virtual;
     procedure Modification; virtual;
-  protected
-    class property Reg: TRegistry read FReg;
-  protected
-    property EnvVars: TStrings read GetEnvVars;
   public
     class procedure GetEffectivePaths(const APaths: TStrings; const ABase: Boolean = False);
     class procedure GetSearchPaths(const APlatform: string; const APaths: TStrings; const AAdd: Boolean = False);
@@ -187,11 +163,11 @@ implementation
 
 uses
   // RTL
-  System.SysUtils,
+  System.SysUtils, System.Win.Registry,
   // Windows
   Winapi.Windows,
   // DW
-  DW.OTA.Helpers, DW.OSDevice;
+  DW.OTA.Registry, DW.OTA.Helpers, DW.OSDevice;
 
 function GetEnvironmentVariable(const AName: string): string;
 const
@@ -211,54 +187,6 @@ begin
   end;
 end;
 
-{ TUserRegistry }
-
-constructor TUserRegistry.Create;
-var
-  LAccess: Cardinal;
-begin
-  LAccess := KEY_READ or KEY_WRITE;
-  if TOSVersion.Architecture = TOSVersion.TArchitecture.arIntelX64 then
-    LAccess := LAccess or KEY_WOW64_64KEY
-  else
-    LAccess := LAccess or KEY_WOW64_32KEY;
-  inherited Create(LAccess);
-  RootKey := HKEY_CURRENT_USER;
-  FRootPath := TOTAHelper.GetRegKey;
-end;
-
-procedure TUserRegistry.ReadKeys(const APath: string; const AKeys: TStrings);
-begin
-  AKeys.Clear;
-  if OpenSubKey(APath) then
-  try
-    GetKeyNames(AKeys);
-  finally
-    CloseKey;
-  end;
-end;
-
-function TUserRegistry.OpenSubKey(const APath: string; const ACanCreate: Boolean =  False): Boolean;
-begin
-  Result := OpenKey(FRootPath + APath, ACanCreate);
-end;
-
-function TUserRegistry.FindNextKeyIndex(const AKeys: TStrings; const AKey: string): Integer;
-var
-  I, LKeyIndex: Integer;
-  LKeyName: string;
-begin
-  Result := -1;
-  for I := 0 to AKeys.Count - 1 do
-  begin
-    LKeyName := AKeys[I];
-    if LKeyName.StartsWith(AKey) and TryStrToInt(LKeyName.Substring(Length(AKey)), LKeyIndex) and (LKeyIndex > Result) then
-      Result := LKeyIndex;
-  end;
-  if Result > -1 then
-    Inc(Result);
-end;
-
 { TWizard }
 
 constructor TWizard.Create;
@@ -267,27 +195,9 @@ begin
   //
 end;
 
-class constructor TWizard.CreateClass;
-begin
-  FReg := TUserRegistry.Create;
-  FEnvVars := TStringList.Create;
-end;
-
-class destructor TWizard.DestroyClass;
-begin
-  FReg.Free;
-  FEnvVars.Free;
-end;
-
 procedure TWizard.FileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string);
 begin
   //
-end;
-
-function TWizard.GetEnvVars: TStrings;
-begin
-  GetEnvironmentVars(FEnvVars, False);
-  Result := FEnvVars;
 end;
 
 function TWizard.GetRSVersion: string;
@@ -315,12 +225,14 @@ end;
 class procedure TWizard.GetSearchPaths(const APlatform: string; const APaths: TStrings; const AAdd: Boolean = False);
 var
   LPaths: TStrings;
+  LReg: TRegistry;
 begin
-  if Reg.OpenKey(TOTAHelper.GetRegKey + '\Library\' + APlatform, False) then
+  LReg := TBDSRegistry.Current;
+  if LReg.OpenKey(TOTAHelper.GetRegKey + '\Library\' + APlatform, False) then
   try
     LPaths := TStringList.Create;
     try
-      LPaths.Text := StringReplace(Reg.GetDataAsString('Search Path'), ';', #13#10, [rfReplaceAll]);
+      LPaths.Text := StringReplace(LReg.GetDataAsString('Search Path'), ';', #13#10, [rfReplaceAll]);
       if AAdd then
         APaths.AddStrings(LPaths)
       else
@@ -329,7 +241,7 @@ begin
       LPaths.Free;
     end;
   finally
-    Reg.CloseKey;
+    LReg.CloseKey;
   end;
 end;
 
