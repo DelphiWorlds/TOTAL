@@ -20,12 +20,16 @@ type
     class function CreateWithAction(const AOwner: TComponent; const ACaption: string; const AHandler: TNotifyEvent;
       const AImageIndex: Integer = -1): TMenuItem;
     class function CreateSeparator(const AOwner: TComponent): TMenuItem;
+  public
+    function FindMenuByCaption(const ACaption: string; out AItem: TMenuItem): Boolean;
     procedure Sort(const AToSeparator: Boolean = False);
   end;
 
 implementation
 
 uses
+  // RTL
+  System.SysUtils,
   // Vcl
   Vcl.ActnList;
 
@@ -51,6 +55,21 @@ begin
 //  if AInsert and (AOwner is TMenuItem) then
 //    TMenuItem(AOwner).Insert(TMenuItem(AOwner).Count, Result);
   Result.ImageIndex := AImageIndex;
+end;
+
+function TMenuItemHelper.FindMenuByCaption(const ACaption: string; out AItem: TMenuItem): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to Count - 1 do
+  begin
+    if string(Items[I].Caption).Equals(ACaption) then
+    begin
+      AItem := Items[I];
+      Exit(True);
+    end;
+  end;
 end;
 
 // A variation of: http://embarcadero.newsgroups.archived.at/public.delphi.language.delphi.win32/200912/0912166323.html
