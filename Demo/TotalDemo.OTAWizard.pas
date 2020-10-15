@@ -5,24 +5,40 @@ interface
 implementation
 
 uses
+  // RTL
+  System.Classes,
   // ToolsAPI
   ToolsAPI,
   // Vcl
-  Vcl.Menus, Vcl.Forms,
+  Vcl.Menus, Vcl.Forms, Vcl.Dialogs,
   // TOTAL
-  DW.OTA.Wizard, DW.OTA.IDENotifierOTAWizard, DW.OTA.Helpers, DW.Menus.Helpers,
+  DW.OTA.Wizard, DW.OTA.IDENotifierOTAWizard, DW.OTA.Helpers, DW.Menus.Helpers, DW.OTA.ProjectManagerMenu, DW.OTA.Notifiers,
   // Demo
   TotalDemo.Consts, TotalDemo.DockWindowForm;
 
 type
+  TDemoOTAWizard = class;
+
+  TDemoProjectManagerMenuNotifier = class(TProjectManagerMenuNotifier)
+  private
+    FWizard: TDemoOTAWizard;
+  public
+    procedure DoAddMenu(const AProject: IOTAProject; const AIdentList: TStrings; const AProjectManagerMenuList: IInterfaceList;
+      AIsMultiSelect: Boolean); override;
+  public
+    constructor Create(const AWizard: TDemoOTAWizard);
+  end;
+
   /// <summary>
   ///  Demo add-in wizard descendant that receives IDE notifications
   /// </summary>
   TDemoOTAWizard = class(TIDENotifierOTAWizard)
   private
     FMenuItem: TMenuItem;
+    FPMMenuNotifier: ITOTALNotifier;
     procedure AddDockWindowMenu;
     procedure AddMenu;
+    procedure DemoMenuHandler;
     procedure DockWindowActionHandler(Sender: TObject);
   protected
     class function GetWizardName: string; override;
@@ -38,12 +54,31 @@ type
     destructor Destroy; override;
   end;
 
+const
+  cPMMPDemoSection = pmmpVersionControlSection + 100000;
+
+{ TDemoProjectManagerMenuNotifier }
+
+constructor TDemoProjectManagerMenuNotifier.Create(const AWizard: TDemoOTAWizard);
+begin
+  inherited Create;
+  FWizard := AWizard;
+end;
+
+procedure TDemoProjectManagerMenuNotifier.DoAddMenu(const AProject: IOTAProject; const AIdentList: TStrings;
+  const AProjectManagerMenuList: IInterfaceList; AIsMultiSelect: Boolean);
+begin
+  AProjectManagerMenuList.Add(TProjectManagerMenuSeparator.Create(cPMMPDemoSection));
+  AProjectManagerMenuList.Add(TProjectManagerMenu.Create('Demo Item', 'DemoItem', cPMMPDemoSection + 100, FWizard.DemoMenuHandler));
+end;
+
 { TDemoOTAWizard }
 
 constructor TDemoOTAWizard.Create;
 begin
   inherited;
   TOTAHelper.RegisterThemeForms([TDockWindowForm]);
+  FPMMenuNotifier := TDemoProjectManagerMenuNotifier.Create(Self);
   AddMenu;
   AddDockWindowMenu;
 end;
@@ -51,6 +86,7 @@ end;
 destructor TDemoOTAWizard.Destroy;
 begin
   FMenuItem.Free;
+  FPMMenuNotifier.RemoveNotifier;
   inherited;
 end;
 
@@ -84,6 +120,11 @@ begin
     TOTAHelper.ApplyTheme(DockWindowForm);
   end;
   DockWindowForm.Show;
+end;
+
+procedure TDemoOTAWizard.DemoMenuHandler;
+begin
+  ShowMessage('Demo item clicked');
 end;
 
 procedure TDemoOTAWizard.IDEStarted;
