@@ -22,6 +22,7 @@ type
     function OpenSubKey(const APath: string; const ACanCreate: Boolean =  False): Boolean;
     procedure ReadKeys(const APath: string; const AKeys: TStrings); overload;
     function ReadKeys(const APath: string): TArray<string>; overload;
+    property RootPath: string read FRootPath;
   end;
 
 implementation
