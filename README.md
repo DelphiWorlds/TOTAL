@@ -10,12 +10,12 @@ The goal of TOTAL was to create a framework for creating Delphi add-ins, whilst 
 
 ## Creating an add-in
 
-**Note that TOTAL has a dependency on the [Kastri Free library](https://github.com/DelphiWorlds/KastriFree) **
+**Note that TOTAL has a dependency on the [Kastri library](https://github.com/DelphiWorlds/Kastri) **
 
 1. In Delphi, File|New|Other, select Delphi, then Dynamic Library (currently only DLL add-ins are supported with TOTAL)
 2. In the Project Options, select Building > Delphi Compiler, All configurations - All platforms
 3. Optional: In Conditional Defines enter: EXPERT (please see below about how it is used)
-4. In the Search Path box, ensure that you have paths to the API, Core and Include folders of Kastri Free
+4. In the Search Path box, ensure that you have paths to the API, Core and Include folders of Kastri
 5. Create a 24x24 bitmap called Icon.bmp which will be used as the icon on the Delphi splash screen when your add-in loads, and save it in your add-in project folder
 6. Create a new unit (this will be for the wizard for your add-in)
    Typically, your add-in will use a wizard based on TIDENotifierWizard. You can use the TotalDemo.OTAWizard unit from the demo project as a basis or as a guideline for your wizard
