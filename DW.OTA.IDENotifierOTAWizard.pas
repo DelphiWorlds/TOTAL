@@ -50,7 +50,6 @@ type
   TIDENotifierOTAWizard = class(TOTAWizard)
   private
     FIDENotifier: ITOTALNotifier;
-    [Weak] FProject: IOTAProject;
   protected
     /// <summary>
     ///   Override IDENotifierAfterCompile to be notified when a compile has finished
