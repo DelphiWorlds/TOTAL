@@ -6,15 +6,17 @@ unit DW.OTA.Wizard;
 {                                                       }
 {*******************************************************}
 
+{$I DW.GlobalDefines.inc}
+
 interface
 
 uses
   // RTL
   System.Generics.Collections, System.Classes,
   // Design
-  ToolsAPI,
+  ToolsAPI, DeskUtil, DeskForm,
   // VCL
-  Vcl.Forms, Vcl.ExtCtrls;
+  Vcl.Forms, Vcl.ExtCtrls, Vcl.ActnList, Vcl.ActnPopup, Vcl.Menus;
 
 type
   /// <summary>
@@ -24,11 +26,15 @@ type
   protected
     procedure ActiveFormChanged; virtual;
     procedure ConfigChanged; virtual;
+    procedure DebuggerProcessCreated(const AProcess: IOTAProcess); virtual;
     procedure FileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string); virtual;
     function GetRSVersion: string;
+    function HookedEditorMenuPopup(const AMenuItem: TMenuItem): Boolean; virtual;
     procedure IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean); virtual;
     procedure IDEStarted; virtual;
+    procedure IDEStopped; virtual;
     procedure Modification; virtual;
+    procedure PeriodicTimer; virtual;
   public
     class procedure GetEffectivePaths(const APaths: TStrings; const ABase: Boolean = False);
     class procedure GetSearchPaths(const APlatform: string; const APaths: TStrings; const AAdd: Boolean = False);
@@ -58,15 +64,19 @@ type
     class var FRegistry: TWizardRegistry;
     class var FWizard: TOTAWizard;
     class var FWizards: TWizards;
+    class procedure DestroyWizards;
     class procedure Terminate; static;
   private
     FActiveForm: TForm;
     FIsIDEStarted: Boolean;
-    FIDETimer: TTimer;
+    FPeriodicInterval: Cardinal;
+    FTimer: TTimer;
     procedure CreateWizards;
     procedure DoActiveFormChanged;
-    procedure IDETimerIntervalHandler(Sender: TObject);
+    procedure TimerIntervalHandler(Sender: TObject);
     procedure NotifyIDEStarted;
+    procedure NotifyIDEStopped;
+    procedure NotifyPeriodicTimer;
     procedure RegisterPlugin;
   protected
     /// <summary>
@@ -77,6 +87,10 @@ type
     ///   Call RegisterSplash in the initialization section of your TOTAWizard descendants unit
     /// </summary>
     class procedure RegisterSplash;
+    /// <summary>
+    ///   Provides class-based access to the instance of the add-in
+    /// </summary>
+    class property Wizard: TOTAWizard read FWizard;
   protected
     /// <summary>
     ///   Called when the active form of the IDE changes
@@ -85,16 +99,34 @@ type
     /// <summary>
     ///   Call ConfigChanged to notify the "sub-wizards" that the configuration has changed
     /// </summary>
-    procedure ConfigChanged;
+    procedure ConfigChanged; virtual;
+    /// <summary>
+    ///   Called when the debugger creates a process
+    /// </summary>
+    procedure DebuggerProcessCreated(const AProcess: IOTAProcess);
     /// <summary>
     ///   Call FileNotification to notify the "sub-wizards" of the TOTAFileNotification
     /// </summary>
     procedure FileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string);
+    /// <summary>
+    ///   Finds the popup that shows when right-clicking the editor
+    /// </summary>
+    function FindEditorPopup(out APopup: TPopupActionBar): Boolean;
+    /// <summary>
+    ///   Returns the plugin name and version
+    /// </summary>
     function GetWizardPluginName: string;
     /// <summary>
     ///   Override this function with the description of your add-in
     /// </summary>
     function GetWizardDescription: string; virtual;
+    /// <summary>
+    ///   Call HookedEditorMenu to notify the "sub-wizards" that they can now add items to the wizard's menu item
+    /// </summary>
+    procedure HookedEditorMenuPopup(const AMenuItem: TMenuItem);
+    /// <summary>
+    ///   Called when the IDE has finished compiling the specified project
+    /// </summary>
     procedure IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean);
     /// <summary>
     ///   Override this function to respond when the IDE has started
@@ -107,7 +139,7 @@ type
     /// <summary>
     ///   Override this function to take advantage of the IDE timer
     /// </summary>
-    procedure IDETimer; virtual;
+    procedure PeriodicTimer; virtual;
     /// <summary>
     ///   Call Modification to notify the "sub-wizards" that a modification has occurred
     /// </summary>
@@ -132,11 +164,15 @@ type
     /// </summary>
     function GetName: string; virtual;
     function GetState: TWizardState;
-    /// <summary>
-    ///   Provides class-based access to the instance of the add-in
-    /// </summary>
-    class property Wizard: TOTAWizard read FWizard;
   public
+    /// <summary>
+    ///   Creates an instance of a dockable form and performs the necessary initialization
+    /// </summary>
+    class procedure CreateDockableForm(var AForm; const AClass: TDesktopFormClass);
+    /// <summary>
+    ///   Destroys an instance of a dockable form and performs the necessary finalization
+    /// </summary>
+    class procedure FreeDockableForm(var AForm);
     /// <summary>
     ///   Override this function if necessary to provide the add-in's version (default is Major.Minor.Release)
     /// </summary>
@@ -149,6 +185,11 @@ type
     /// </remarks>
     class function InitializeWizard(const Services: IBorlandIDEServices; RegisterProc: TWizardRegisterProc;
       var TerminateProc: TWizardTerminateProc; const AWizardClass: TOTAWizardClass): Boolean;
+    /// <summary>
+    ///   Call RegisterDesktopForm somewhere
+    /// </summary>
+    // class procedure RegisterDesktopFormClass(const AClass: TDesktopFormClass);
+    // class procedure RegisterDesktopForm(var AForm);
     /// <summary>
     ///   Call RegisterWizard to register a "sub-wizard" that is managed by the add-in
     /// </summary>
@@ -167,7 +208,7 @@ uses
   // Windows
   Winapi.Windows,
   // DW
-  DW.OTA.Registry, DW.OTA.Helpers, DW.OSDevice;
+  DW.OTA.Registry, DW.OTA.Helpers, DW.Menus.Helpers, DW.OSDevice;
 
 function GetEnvironmentVariable(const AName: string): string;
 const
@@ -192,6 +233,11 @@ end;
 constructor TWizard.Create;
 begin
   inherited;
+  //
+end;
+
+procedure TWizard.DebuggerProcessCreated(const AProcess: IOTAProcess);
+begin
   //
 end;
 
@@ -245,7 +291,17 @@ begin
   end;
 end;
 
+function TWizard.HookedEditorMenuPopup(const AMenuItem: TMenuItem): Boolean;
+begin
+  Result := False;
+end;
+
 procedure TWizard.Modification;
+begin
+  //
+end;
+
+procedure TWizard.PeriodicTimer;
 begin
   //
 end;
@@ -270,6 +326,11 @@ begin
   //
 end;
 
+procedure TWizard.IDEStopped;
+begin
+  //
+end;
+
 { TOTAWizard }
 
 constructor TOTAWizard.Create;
@@ -279,17 +340,17 @@ begin
   TOTAHelper.IsDebug := True;
   {$ENDIF}
   RegisterPlugin;
-  FIDETimer := TTimer.Create(nil);
-  FIDETimer.Interval := 50;
-  FIDETimer.OnTimer := IDETimerIntervalHandler;
-  FIDETimer.Enabled := True;
+  FTimer := TTimer.Create(nil);
+  FTimer.Interval := 50;
+  FTimer.OnTimer := TimerIntervalHandler;
+  FTimer.Enabled := True;
 end;
 
 destructor TOTAWizard.Destroy;
 begin
   if FPluginIndex > 0 then
     (BorlandIDEServices as IOTAAboutBoxServices).RemovePluginInfo(FPluginIndex);
-  FIDETimer.Free;
+  FTimer.Free;
   inherited;
 end;
 
@@ -301,6 +362,17 @@ begin
   begin
     for LWizard in FWizards do
       LWizard.ConfigChanged;
+  end;
+end;
+
+procedure TOTAWizard.DebuggerProcessCreated(const AProcess: IOTAProcess);
+var
+  LWizard: TWizard;
+begin
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+      LWizard.DebuggerProcessCreated(AProcess);
   end;
 end;
 
@@ -325,16 +397,30 @@ begin
   //
 end;
 
-procedure TOTAWizard.IDETimer;
+procedure TOTAWizard.PeriodicTimer;
 begin
   //
 end;
 
-procedure TOTAWizard.IDETimerIntervalHandler(Sender: TObject);
+function TOTAWizard.FindEditorPopup(out APopup: TPopupActionBar): Boolean;
+var
+  LComponent: TComponent;
+begin
+  Result := False;
+  if TOTAHelper.FindComponentGlobal('EditorLocalMenu', LComponent) and (LComponent is TPopupActionBar) then
+  begin
+    APopup := TPopupActionBar(LComponent);
+    Result := True;
+  end;
+end;
+
+procedure TOTAWizard.TimerIntervalHandler(Sender: TObject);
 var
   LMainForm: TComponent;
+  LTerminated: Boolean;
 begin
-  if not Application.Terminated then
+  LTerminated := Application.Terminated;
+  if not LTerminated then
   begin
     LMainForm := Application.FindComponent('AppBuilder');
     if not FIsIDEStarted and (LMainForm is TForm) and TForm(LMainForm).Visible then
@@ -344,10 +430,15 @@ begin
       FActiveForm := Screen.ActiveForm;
       DoActiveFormChanged;
     end;
-    IDETimer;
+    if FIsIDEStarted then
+    begin
+      Inc(FPeriodicInterval, FTimer.Interval);
+      if FPeriodicInterval >= 100 then
+        NotifyPeriodicTimer;
+    end;
   end
-  else
-    IDEStopped;
+  else if FIsIDEStarted then
+    NotifyIDEStopped;
 end;
 
 procedure TOTAWizard.DoActiveFormChanged;
@@ -375,6 +466,31 @@ begin
   end;
 end;
 
+procedure TOTAWizard.NotifyIDEStopped;
+var
+  LWizard: TWizard;
+begin
+  IDEStopped;
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+      LWizard.IDEStopped;
+  end;
+end;
+
+procedure TOTAWizard.NotifyPeriodicTimer;
+var
+  LWizard: TWizard;
+begin
+  PeriodicTimer;
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+      LWizard.PeriodicTimer;
+  end;
+  FPeriodicInterval := 0;
+end;
+
 procedure TOTAWizard.ActiveFormChanged;
 begin
   //
@@ -395,6 +511,19 @@ begin
     for LWizardClass in FRegistry do
       FWizards.Add(LWizardClass.Create);
     WizardsCreated;
+  end;
+end;
+
+class procedure TOTAWizard.DestroyWizards;
+var
+  LWizard: TWizard;
+begin
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+      LWizard.Free;
+    FWizards.Free;
+    FWizards := nil;
   end;
 end;
 
@@ -450,6 +579,22 @@ begin
   end;
 end;
 
+procedure TOTAWizard.HookedEditorMenuPopup(const AMenuItem: TMenuItem);
+var
+  LWizard: TWizard;
+  LIndex: Integer;
+begin
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+    begin
+      LIndex := AMenuItem.Count - 1;
+      if LWizard.HookedEditorMenuPopup(AMenuItem) and (LIndex > -1) then
+        TMenuItem.CreateSeparator(AMenuItem, LIndex);
+    end;
+  end;
+end;
+
 function TOTAWizard.GetIDString: string;
 begin
   Result := '';
@@ -495,6 +640,32 @@ begin
   end;
 end;
 
+class procedure TOTAWizard.CreateDockableForm(var AForm; const AClass: TDesktopFormClass);
+var
+  LForm: TCustomForm;
+begin
+  TCustomForm(AForm) := AClass.Create(nil);
+  LForm := TCustomForm(AForm);
+  if @RegisterFieldAddress <> nil then
+    RegisterFieldAddress(LForm.Name, @AForm);
+  end;
+  RegisterDesktopFormClass(AClass, LForm.Name, LForm.Name);
+end;
+
+class procedure TOTAWizard.FreeDockableForm(var AForm);
+var
+  LForm: TCustomForm;
+begin
+  LForm := TCustomForm(AForm);
+  if Assigned(LForm) then
+  begin
+    if @UnRegisterFieldAddress <> nil then
+      UnregisterFieldAddress(@AForm);
+    LForm.Free;
+    TCustomForm(AForm) := nil;
+  end;
+end;
+
 procedure TOTAWizard.RegisterPlugin;
 var
   LBitmapHandle: HBITMAP;
@@ -537,8 +708,8 @@ end;
 
 class procedure TOTAWizard.Terminate;
 begin
+  DestroyWizards;
   (BorlandIDEServices as IOTAWizardServices).RemoveWizard(FIndex);
 end;
 
 end.
-
