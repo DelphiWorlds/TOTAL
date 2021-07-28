@@ -1,8 +1,17 @@
 unit DW.OTA.Registry;
 
+{*******************************************************}
+{                                                       }
+{         TOTAL - Terrific Open Tools API Library       }
+{                                                       }
+{*******************************************************}
+
+{$I DW.GlobalDefines.inc}
+
 interface
 
 uses
+  // RTL
   System.Win.Registry, System.Classes;
 
 type
@@ -19,6 +28,7 @@ type
     class property Current: TBDSRegistry read GetCurrent;
   public
     constructor Create;
+    function GetUpdateVersion: Integer; // i.e. is it 10.4.0, 10.4.1, 10.4.2 etc
     function OpenSubKey(const APath: string; const ACanCreate: Boolean =  False): Boolean;
     procedure ReadKeys(const APath: string; const AKeys: TStrings); overload;
     function ReadKeys(const APath: string): TArray<string>; overload;
@@ -28,8 +38,11 @@ type
 implementation
 
 uses
+  // RTL
   System.SysUtils,
+  // Windows
   Winapi.Windows,
+  // DW
   DW.OTA.Helpers;
 
 { TBDSRegistry }
@@ -74,6 +87,21 @@ begin
   if FCurrent = nil then
     FCurrent := TBDSRegistry.Create;
   Result := FCurrent;
+end;
+
+function TBDSRegistry.GetUpdateVersion: Integer;
+var
+  LParts: TArray<string>;
+begin
+  Result := -1; // Cannot determine
+  if OpenKey(FRootPath + '\InstalledUpdates', False) then
+  try
+    LParts := ReadString('Main Product Update').Split([' ']); // e.g. Delphi 10.4 and C++Builder 10.4 Update 2
+    if Length(LParts) > 0 then
+      Result := StrToIntDef(LParts[Length(LParts) - 1], -1);
+  finally
+    CloseKey;
+  end;
 end;
 
 function TBDSRegistry.OpenSubKey(const APath: string; const ACanCreate: Boolean): Boolean;
