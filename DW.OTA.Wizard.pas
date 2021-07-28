@@ -648,7 +648,6 @@ begin
   LForm := TCustomForm(AForm);
   if @RegisterFieldAddress <> nil then
     RegisterFieldAddress(LForm.Name, @AForm);
-  end;
   RegisterDesktopFormClass(AClass, LForm.Name, LForm.Name);
 end;
 
