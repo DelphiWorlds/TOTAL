@@ -269,10 +269,6 @@ type
     /// </summary>
     class procedure RegisterThemeForms(const AFormClasses: array of TCustomFormClass); static;
     /// <summary>
-    ///  Saves the current IDE options
-    /// </summary>
-    class procedure SaveIDEOptions; static;
-    /// <summary>
     ///  Sets the projects SDK version
     /// </summary>
     class procedure SetProjectSDKVersion(const AProject: IOTAProject; const APlatform, ASDKVersion: string); static;
@@ -678,26 +674,6 @@ begin
   Result := '';
   if Supports(AProject, IOTAProjectPlatforms, LPlatforms) then
     Result := LPlatforms.GetProfile(AProject.CurrentPlatform);
-end;
-
-class procedure TOTAHelper.SaveIDEOptions;
-var
-  LOKButton: TControl;
-  LOptions: TComponent;
-begin
-  if FindForm('DefaultEnvironmentDialog', LOptions) then
-  begin
-    LOKButton := TControl(LOptions.FindComponent('OKButton'));
-    if LOKButton <> nil then
-    begin
-      TOpenControl(LOKButton).Click;
-      AddTitleMessage('Clicked OK button, I hope', 'TOTAL');
-    end
-    else
-      AddTitleMessage('Did not find OKButton', 'TOTAL');
-  end
-  else
-    AddTitleMessage('Did not find DefaultEnvironmentDialog', 'TOTAL');
 end;
 
 class procedure TOTAHelper.SetProjectSDKVersion(const AProject: IOTAProject; const APlatform, ASDKVersion: string);
