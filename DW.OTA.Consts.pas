@@ -40,7 +40,7 @@ const
   cProjectConfigurations: array[TProjectConfiguration] of string = ('Debug', 'Release');
 
   {$IF Defined(EXPERT)}
-  cCompileModes: array[TOTACompileMode] of string = ('Compile', 'Build', 'Check', 'Make Unit');
+  cCompileModes: array[TOTACompileMode] of string = ('Compile', 'Build', 'Check', 'Make Unit' {$IF CompilerVersion > 34}, 'Clean', 'Link'{$ENDIF});
   {$ENDIF}
 
   cBuildModes: array[TBuildMode] of string = ('Clean', 'Make', 'Build', 'Deploy');
