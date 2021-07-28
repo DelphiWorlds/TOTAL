@@ -19,7 +19,7 @@ type
   public
     class function CreateWithAction(const AOwner: TComponent; const ACaption: string; const AHandler: TNotifyEvent;
       const AImageIndex: Integer = -1): TMenuItem;
-    class function CreateSeparator(const AOwner: TComponent): TMenuItem;
+    class function CreateSeparator(const AOwner: TComponent; const AIndex: Integer = -1): TMenuItem;
   public
     function FindMenuByCaption(const ACaption: string; out AItem: TMenuItem): Boolean;
     procedure Sort(const AToSeparator: Boolean = False);
@@ -35,11 +35,14 @@ uses
 
 { TMenuItemHelper }
 
-class function TMenuItemHelper.CreateSeparator(const AOwner: TComponent): TMenuItem;
+class function TMenuItemHelper.CreateSeparator(const AOwner: TComponent; const AIndex: Integer = -1): TMenuItem;
 begin
   Result := TMenuItem.Create(AOwner);
   Result.Caption := '-';
-  TMenuItem(AOwner).Insert(TMenuItem(AOwner).Count, Result);
+  if AIndex > -1 then
+    TMenuItem(AOwner).Insert(AIndex, Result)
+  else
+    TMenuItem(AOwner).Insert(TMenuItem(AOwner).Count, Result);
 end;
 
 class function TMenuItemHelper.CreateWithAction(const AOwner: TComponent; const ACaption: string; const AHandler: TNotifyEvent;
