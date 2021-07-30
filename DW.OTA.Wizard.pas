@@ -510,8 +510,8 @@ begin
   begin
     for LWizardClass in FRegistry do
       FWizards.Add(LWizardClass.Create);
-    WizardsCreated;
   end;
+  WizardsCreated;
 end;
 
 class procedure TOTAWizard.DestroyWizards;
