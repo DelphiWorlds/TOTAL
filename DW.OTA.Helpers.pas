@@ -201,6 +201,10 @@ type
     /// </summary>
     class function GetProjectActiveBuildConfiguration(const AProject: IOTAProject): IOTABuildConfiguration; static;
     /// <summary>
+    ///  Gets the active build configuration for the given project
+    /// </summary>
+    class function GetProjectActiveBuildConfigurationValue(const AProject: IOTAProject; const AKey: string): string; static;
+    /// <summary>
     ///  Gets the configuration names for the project, e.g. Debug, Release
     /// </summary>
     class function GetProjectConfigurationNames(const AProject: IOTAProject): TArray<string>; static;
@@ -729,6 +733,16 @@ begin
   end;
 end;
 
+class function TOTAHelper.GetProjectActiveBuildConfigurationValue(const AProject: IOTAProject; const AKey: string): string;
+var
+  LConfig: IOTABuildConfiguration;
+begin
+  Result := '';
+  LConfig := GetProjectActiveBuildConfiguration(AProject);
+  if LConfig <> nil then
+    Result := LConfig.Value[AKey];
+end;
+
 class function TOTAHelper.GetProjectOptionsConfigurations(const AProject: IOTAProject): IOTAProjectOptionsConfigurations;
 var
   LProjectOptions: IOTAProjectOptions;
@@ -822,7 +836,10 @@ begin
   try
     GetEnvironmentVars(LVars, True);
     for I := 0 to LVars.Count - 1 do
+    begin
       Result := StringReplace(Result, '$(' + LVars.Names[i] + ')', LVars.Values[LVars.Names[i]], [rfReplaceAll, rfIgnoreCase]);
+      Result := StringReplace(Result, '%' + LVars.Names[i] + '%', LVars.Values[LVars.Names[i]], [rfReplaceAll, rfIgnoreCase]);
+    end;
   finally
     LVars.Free;
   end;
