@@ -748,9 +748,12 @@ var
   LProjectOptions: IOTAProjectOptions;
 begin
   Result := nil;
-  LProjectOptions := AProject.ProjectOptions;
-  if LProjectOptions <> nil then
-    Supports(LProjectOptions, IOTAProjectOptionsConfigurations, Result);
+  if AProject <> nil then
+  begin
+    LProjectOptions := AProject.ProjectOptions;
+    if LProjectOptions <> nil then
+      Supports(LProjectOptions, IOTAProjectOptionsConfigurations, Result);
+  end;
 end;
 
 class function TOTAHelper.GetActiveProjectOptionsConfigurations: IOTAProjectOptionsConfigurations;
