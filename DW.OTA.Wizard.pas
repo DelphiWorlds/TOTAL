@@ -26,11 +26,13 @@ type
   protected
     procedure ActiveFormChanged; virtual;
     procedure ConfigChanged; virtual;
+    function DebuggerBeforeProgramLaunch(const Project: IOTAProject): Boolean; virtual;
     procedure DebuggerProcessCreated(const AProcess: IOTAProcess); virtual;
     procedure FileNotification(const ANotifyCode: TOTAFileNotification; const AFileName: string); virtual;
     function GetRSVersion: string;
     function HookedEditorMenuPopup(const AMenuItem: TMenuItem): Boolean; virtual;
     procedure IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean); virtual;
+    procedure IDEBeforeCompile(const AProject: IOTAProject; const AIsCodeInsight: Boolean; var ACancel: Boolean); virtual;
     procedure IDEStarted; virtual;
     procedure IDEStopped; virtual;
     procedure Modification; virtual;
@@ -100,6 +102,7 @@ type
     ///   Call ConfigChanged to notify the "sub-wizards" that the configuration has changed
     /// </summary>
     procedure ConfigChanged; virtual;
+    function DebuggerBeforeProgramLaunch(const AProject: IOTAProject): Boolean; virtual;
     /// <summary>
     ///   Called when the debugger creates a process
     /// </summary>
@@ -128,6 +131,10 @@ type
     ///   Called when the IDE has finished compiling the specified project
     /// </summary>
     procedure IDEAfterCompile(const AProject: IOTAProject; const ASucceeded, AIsCodeInsight: Boolean);
+    /// <summary>
+    ///   Called when the IDE is about to compile the specified project
+    /// </summary>
+    procedure IDEBeforeCompile(const AProject: IOTAProject; const AIsCodeInsight: Boolean; var ACancel: Boolean);
     /// <summary>
     ///   Override this function to respond when the IDE has started
     /// </summary>
@@ -236,6 +243,11 @@ begin
   //
 end;
 
+function TWizard.DebuggerBeforeProgramLaunch(const Project: IOTAProject): Boolean;
+begin
+  Result := True;
+end;
+
 procedure TWizard.DebuggerProcessCreated(const AProcess: IOTAProcess);
 begin
   //
@@ -321,6 +333,11 @@ begin
   //
 end;
 
+procedure TWizard.IDEBeforeCompile(const AProject: IOTAProject; const AIsCodeInsight: Boolean; var ACancel: Boolean);
+begin
+  //
+end;
+
 procedure TWizard.IDEStarted;
 begin
   //
@@ -365,6 +382,22 @@ begin
   end;
 end;
 
+function TOTAWizard.DebuggerBeforeProgramLaunch(const AProject: IOTAProject): Boolean;
+var
+  LWizard: TWizard;
+begin
+  Result := True;
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+    try
+      Result := LWizard.DebuggerBeforeProgramLaunch(AProject);
+    except
+      // Swallow any exceptions caused by wizards
+    end;
+  end;
+end;
+
 procedure TOTAWizard.DebuggerProcessCreated(const AProcess: IOTAProcess);
 var
   LWizard: TWizard;
@@ -384,6 +417,21 @@ begin
   begin
     for LWizard in FWizards do
       LWizard.IDEAfterCompile(AProject, ASucceeded, AIsCodeInsight);
+  end;
+end;
+
+procedure TOTAWizard.IDEBeforeCompile(const AProject: IOTAProject; const AIsCodeInsight: Boolean; var ACancel: Boolean);
+var
+  LWizard: TWizard;
+begin
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+    try
+      LWizard.IDEBeforeCompile(AProject, AIsCodeInsight, ACancel);
+    except
+      // Swallow any exceptions caused by wizards
+    end;
   end;
 end;
 
