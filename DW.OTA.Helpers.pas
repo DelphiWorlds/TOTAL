@@ -244,6 +244,7 @@ type
     ///  Gets a value from version info for the given key
     /// </summary>
     class function GetVerInfoValue(const AVerInfo: string; const AKey: string): string; static;
+    class function HasBuildEvents(const AProject: IOTAProject): Boolean; static;
     /// <summary>
     ///  Indicates whether or not the IDE is closing
     /// </summary>
@@ -678,6 +679,34 @@ begin
   Result := '';
   if Supports(AProject, IOTAProjectPlatforms, LPlatforms) then
     Result := LPlatforms.GetProfile(AProject.CurrentPlatform);
+end;
+
+class function TOTAHelper.HasBuildEvents(const AProject: IOTAProject): Boolean;
+var
+  LProvider: IOTABuildEventProvider;
+  LProjectOptionsConfigs: IOTAProjectOptionsConfigurations;
+  LPlatforms: IOTAProjectPlatforms;
+  LBuildConfig, LPlatformConfig: IOTABuildConfiguration;
+  LSupportedPlatform: string;
+  I: Integer;
+begin
+  Result := False;
+  if Supports(AProject, IOTABuildEventProvider, LProvider) and Supports(AProject, IOTAProjectPlatforms, LPlatforms) then
+  begin
+    LProjectOptionsConfigs := GetProjectOptionsConfigurations(AProject);
+    for LSupportedPlatform in LPlatforms.SupportedPlatforms do
+    begin
+      for I := 0 to LProjectOptionsConfigs.ConfigurationCount - 1 do
+      begin
+        LPlatformConfig := LProjectOptionsConfigs.Configurations[I].PlatformConfiguration[LSupportedPlatform];
+        if (LPlatformConfig <> nil) and LProvider.HasBuildEvents(LPlatformConfig.Name, LPlatformConfig.Platform) then
+        begin
+          Result := True;
+          Break;
+        end;
+      end;
+    end;
+  end;
 end;
 
 class procedure TOTAHelper.SetProjectSDKVersion(const AProject: IOTAProject; const APlatform, ASDKVersion: string);
