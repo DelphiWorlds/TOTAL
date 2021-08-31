@@ -186,7 +186,7 @@ end;
 
 procedure TIDENotifierOTAWizard.IDENotifierBeforeCompile(const AProject: IOTAProject; const AIsCodeInsight: Boolean; var ACancel: Boolean);
 begin
-  //
+  IDEBeforeCompile(AProject, AIsCodeInsight, ACancel);
 end;
 
 procedure TIDENotifierOTAWizard.IDENotifierBeforeSave;
