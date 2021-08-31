@@ -14,7 +14,7 @@ uses
   // TOTAL
   DW.OTA.Wizard, DW.OTA.IDENotifierOTAWizard, DW.OTA.Helpers, DW.Menus.Helpers, DW.OTA.ProjectManagerMenu, DW.OTA.Notifiers,
   // Demo
-  TotalDemo.Consts, TotalDemo.DockWindowForm;
+  TotalDemo.Consts, TotalDemo.DockWindowForm, TotalDemo.Resources;
 
 type
   TDemoOTAWizard = class;
@@ -36,10 +36,12 @@ type
   private
     FMenuItem: TMenuItem;
     FPMMenuNotifier: ITOTALNotifier;
+    FResources: TResources;
     procedure AddDockWindowMenu;
     procedure AddMenu;
     procedure DemoMenuHandler;
     procedure DockWindowActionHandler(Sender: TObject);
+    procedure AddToolbarButtons;
   protected
     class function GetWizardName: string; override;
   protected
@@ -56,6 +58,8 @@ type
 
 const
   cPMMPDemoSection = pmmpVersionControlSection + 100000;
+  cTOTALDemoToolbarName = 'TOTALDemoToolbar';
+  cTOTALDemoToolbarCaption = 'TOTAL';
 
 { TDemoProjectManagerMenuNotifier }
 
@@ -78,9 +82,12 @@ constructor TDemoOTAWizard.Create;
 begin
   inherited;
   TOTAHelper.RegisterThemeForms([TDockWindowForm]);
+  FResources := TResources.Create(Application);
   FPMMenuNotifier := TDemoProjectManagerMenuNotifier.Create(Self);
+  (BorlandIDEServices as INTAServices).NewToolbar(cTOTALDemoToolbarName, cTOTALDemoToolbarCaption);
   AddMenu;
   AddDockWindowMenu;
+  AddToolbarButtons;
 end;
 
 destructor TDemoOTAWizard.Destroy;
@@ -110,6 +117,18 @@ var
 begin
   LMenuItem := TMenuItem.CreateWithAction(FMenuItem, 'Dock Window', DockWindowActionHandler);
   FMenuItem.Insert(FMenuItem.Count, LMenuItem);
+end;
+
+procedure TDemoOTAWizard.AddToolbarButtons;
+var
+  LServices: INTAServices;
+begin
+  LServices := BorlandIDEServices as INTAServices;
+  if LServices.GetToolbar(cTOTALDemoToolbarName) <> nil then
+  begin
+    LServices.AddToolButton(cTOTALDemoToolbarName, 'TOTALDemo1Button', FResources.Demo1Action);
+    LServices.AddToolButton(cTOTALDemoToolbarName, 'TOTALDemo2Button', FResources.Demo2Action);
+  end;
 end;
 
 procedure TDemoOTAWizard.DockWindowActionHandler(Sender: TObject);

@@ -9,7 +9,8 @@ uses
   System.Classes,
   TotalDemo.OTAWizard in 'TotalDemo.OTAWizard.pas',
   TotalDemo.Consts in 'TotalDemo.Consts.pas',
-  TotalDemo.DockWindowForm in 'TotalDemo.DockWindowForm.pas' {DockWindowForm};
+  TotalDemo.DockWindowForm in 'TotalDemo.DockWindowForm.pas' {DockWindowForm},
+  TotalDemo.Resources in 'TotalDemo.Resources.pas' {Resources: TDataModule};
 
 {$R *.res}
 
