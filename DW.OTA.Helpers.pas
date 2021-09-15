@@ -78,7 +78,7 @@ type
     /// <summary>
     ///  Expands the variables contained in ASource
     /// </summary>
-    class function ExpandVars(const ASource: string): string; static;
+    class function ExpandVars(const ASource: string; const AProject: IOTAProject = nil): string; static;
     /// <summary>
     ///  Finds a form with a particular name
     /// </summary>
@@ -858,12 +858,28 @@ begin
     APaths[I] := ExpandPath(LProjectPath, APaths[I]);
 end;
 
-class function TOTAHelper.ExpandVars(const ASource: string): string;
+class function TOTAHelper.ExpandVars(const ASource: string; const AProject: IOTAProject): string;
 var
   LVars: TStrings;
   I: Integer;
 begin
   Result := ASource;
+
+  // Fix for empty Platform and/or Config environment values in some versions, like XE6
+  if Assigned(AProject) then
+  begin
+    if not AProject.CurrentPlatform.Trim.IsEmpty then
+    begin
+      Result := StringReplace(Result, '$(Platform)', AProject.CurrentPlatform, [rfReplaceAll, rfIgnoreCase]);
+      Result := StringReplace(Result, '%Platform%', AProject.CurrentPlatform, [rfReplaceAll, rfIgnoreCase]);
+    end;
+    if not AProject.CurrentConfiguration.Trim.IsEmpty then
+    begin
+      Result := StringReplace(Result, '$(Config)', AProject.CurrentConfiguration, [rfReplaceAll, rfIgnoreCase]);
+      Result := StringReplace(Result, '%Config%', AProject.CurrentConfiguration, [rfReplaceAll, rfIgnoreCase]);
+    end;
+  end;
+
   LVars := TStringList.Create;
   try
     GetEnvironmentVars(LVars, True);
