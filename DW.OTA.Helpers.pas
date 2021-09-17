@@ -841,7 +841,7 @@ end;
 
 class function TOTAHelper.ExpandOutputDir(const ASource: string): string;
 begin
-  Result := ExpandProjectActiveConfiguration(ExpandVars(ASource), GetActiveProject);
+  Result := ExpandVars(ExpandProjectActiveConfiguration(ASource, GetActiveProject));
 end;
 
 class procedure TOTAHelper.ExpandPaths(const APaths: TStrings; const AProject: IOTAProject = nil);
