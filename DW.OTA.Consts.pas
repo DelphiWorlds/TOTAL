@@ -51,7 +51,7 @@ const
 
   cProjectOptionOutputDir = 'OutputDir';
 
-  cProductVersionNumbers: array[17..23] of string = ('10', '10.1', '10.2', '10.3', '10.4', '10.5', '10.6');
+  cProductVersionNumbers: array[17..23] of string = ('10', '10.1', '10.2', '10.3', '10.4', '11', '12');
 
   {$IF Defined(EXPERT)}
   cIDEToolBarNames: array[0..14] of string = (
