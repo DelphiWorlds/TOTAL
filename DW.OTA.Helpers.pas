@@ -686,7 +686,7 @@ var
   LProvider: IOTABuildEventProvider;
   LProjectOptionsConfigs: IOTAProjectOptionsConfigurations;
   LPlatforms: IOTAProjectPlatforms;
-  LBuildConfig, LPlatformConfig: IOTABuildConfiguration;
+  LPlatformConfig: IOTABuildConfiguration;
   LSupportedPlatform: string;
   I: Integer;
 begin
