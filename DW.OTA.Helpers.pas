@@ -436,7 +436,7 @@ begin
     LServices.ShowMessageView(LGroup);
   end
   else
-    AddTitleMessage(AMsg);
+    LServices.AddTitleMessage(AMsg);
 end;
 
 class procedure TOTAHelper.ShowMessageView(const AGroupName: string = '');
