@@ -60,6 +60,10 @@ type
     /// </summary>
     class procedure CloseCurrentModule; static;
     /// <summary>
+    ///  Adds a message to a group specified by AGroupName
+    /// </summary>
+    class procedure ClearMessageGroup(const AGroupName: string = ''); static;
+    /// <summary>
     ///  Expands the paths associated with the configuration
     /// </summary>
     class function ExpandConfiguration(const ASource: string; const AConfig: IOTABuildConfiguration): string; static;
@@ -962,6 +966,21 @@ end;
 class procedure TOTAHelper.ApplyTheme(const AComponent: TComponent);
 begin
   (BorlandIDEServices as IOTAIDEThemingServices).ApplyTheme(AComponent);
+end;
+
+class procedure TOTAHelper.ClearMessageGroup(const AGroupName: string);
+var
+  LServices: IOTAMessageServices;
+  LGroup: IOTAMessageGroup;
+begin
+  LServices := BorlandIDEServices as IOTAMessageServices;
+  if not AGroupName.IsEmpty then
+  begin
+    LGroup := LServices.GetGroup(AGroupName);
+    if LGroup = nil then
+      exit;
+    LServices.ClearMessageGroup(LGroup);
+  end
 end;
 
 class procedure TOTAHelper.CloseCurrentModule;
