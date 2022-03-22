@@ -20,9 +20,12 @@ type
   TProjectManagerMenu = class;
 
   TProjectManagerMenuNotifier = class(TTOTALNotifier, IUnknown, IOTANotifier, IOTAProjectMenuItemCreatorNotifier)
+  private
   protected
     procedure AddMenuItem(const AItem: TProjectManagerMenu; const APosition: Integer);
     procedure DoAddMenu(const AProject: IOTAProject; const AIdentList: TStrings; const AProjectManagerMenuList: IInterfaceList;
+      AIsMultiSelect: Boolean); virtual;
+    procedure DoAddGroupMenu(const AProject: IOTAProject; const AIdentList: TStrings; const AProjectManagerMenuList: IInterfaceList;
       AIsMultiSelect: Boolean); virtual;
     function FindItem(const AProjectManagerMenuList: IInterfaceList; const AVerb: string): Integer;
   public
@@ -51,7 +54,7 @@ type
     FVerb: string;
   public
     { IOTALocalMenu }
-    function GetCaption: string;
+    function GetCaption: string; virtual;
     function GetChecked: Boolean; virtual;
     function GetEnabled: Boolean; virtual;
     function GetHelpContext: Integer;
@@ -118,11 +121,19 @@ begin
   //
 end;
 
+procedure TProjectManagerMenuNotifier.DoAddGroupMenu(const AProject: IOTAProject; const AIdentList: TStrings;
+  const AProjectManagerMenuList: IInterfaceList; AIsMultiSelect: Boolean);
+begin
+  //
+end;
+
 procedure TProjectManagerMenuNotifier.AddMenu(const AProject: IOTAProject; const AIdentList: TStrings; const AProjectManagerMenuList: IInterfaceList;
   AIsMultiSelect: Boolean);
 begin
   if AIdentList.IndexOf(sProjectContainer) > -1 then
-    DoAddMenu(AProject, AIdentList, AProjectManagerMenuList, AIsMultiSelect);
+    DoAddMenu(AProject, AIdentList, AProjectManagerMenuList, AIsMultiSelect)
+  else if AIdentList.IndexOf(sProjectGroupContainer) > -1 then
+    DoAddGroupMenu(AProject, AIdentList, AProjectManagerMenuList, AIsMultiSelect);
 end;
 
 procedure TProjectManagerMenuNotifier.AddMenuItem(const AItem: TProjectManagerMenu; const APosition: Integer);
@@ -194,7 +205,7 @@ end;
 
 function TProjectManagerMenu.GetEnabled: Boolean;
 begin
-  Result := True; // for Show IPA, check platform etc
+  Result := True;
 end;
 
 function TProjectManagerMenu.GetHelpContext: Integer;
@@ -239,47 +250,47 @@ end;
 
 procedure TProjectManagerMenu.SetCaption(const Value: string);
 begin
-  //
+  FCaption := Value;
 end;
 
 procedure TProjectManagerMenu.SetChecked(Value: Boolean);
 begin
-  //
+  // Override GetChecked instead
 end;
 
 procedure TProjectManagerMenu.SetEnabled(Value: Boolean);
 begin
-  //
+  // Override GetEnabled instead
 end;
 
 procedure TProjectManagerMenu.SetHelpContext(Value: Integer);
 begin
-  //
+  // Override GetHelpContext instead
 end;
 
 procedure TProjectManagerMenu.SetIsMultiSelectable(Value: Boolean);
 begin
-  //
+  // Override GetIsMultiSelectable instead
 end;
 
 procedure TProjectManagerMenu.SetName(const Value: string);
 begin
-  //
+  // Why would you change the name, after creation? :-)
 end;
 
 procedure TProjectManagerMenu.SetParent(const Value: string);
 begin
-  //
+  // Override GetParent instead
 end;
 
 procedure TProjectManagerMenu.SetPosition(Value: Integer);
 begin
-  //
+  // Not sure why you would change the position after creation
 end;
 
 procedure TProjectManagerMenu.SetVerb(const Value: string);
 begin
-  //
+  // Why would you change the verb, after creation? :-)
 end;
 
 { TProjectManagerMenuSeparator }
