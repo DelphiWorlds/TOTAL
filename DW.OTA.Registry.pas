@@ -32,6 +32,8 @@ type
     function OpenSubKey(const APath: string; const ACanCreate: Boolean =  False): Boolean;
     procedure ReadKeys(const APath: string; const AKeys: TStrings); overload;
     function ReadKeys(const APath: string): TArray<string>; overload;
+    function ReadSubKeyString(const APath, AName: string): string;
+    function WriteSubKeyString(const APath, AName, AValue: string): Boolean;
     property RootPath: string read FRootPath;
   end;
 
@@ -119,6 +121,30 @@ begin
     Result := LKeys.ToStringArray;
   finally
     LKeys.Free;
+  end;
+end;
+
+function TBDSRegistry.ReadSubKeyString(const APath, AName: string): string;
+begin
+  Result := '';
+  if OpenSubKey(APath) then
+  try
+    if ValueExists(AName) then
+      Result := ReadString(AName);
+  finally
+    CloseKey;
+  end;
+end;
+
+function TBDSRegistry.WriteSubKeyString(const APath, AName, AValue: string): Boolean;
+begin
+  Result := False;
+  if OpenSubKey(APath, True) then
+  try
+    WriteString(AName, AValue);
+    Result := True;
+  finally
+    CloseKey;
   end;
 end;
 
