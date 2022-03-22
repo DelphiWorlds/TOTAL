@@ -10,9 +10,11 @@ interface
 
 uses
   // RTL
-  System.Generics.Collections, System.Classes,
+  System.Generics.Collections, System.Classes, System.Types,
   // Design
-  DockForm, ToolsAPI;
+  DockForm, ToolsAPI, StructureViewAPI,
+  // Vcl
+  Vcl.Graphics;
 
 type
   ITOTALNotifier = interface(IInterface)
@@ -92,6 +94,38 @@ type
     procedure RemoveNotifier; override;
   end;
 
+  TEditViewNotifier = class(TTOTALNotifier, INTAEditViewNotifier)
+  private
+    FView: IOTAEditView;
+  public
+   { INTAEditViewNotifier }
+    procedure BeginPaint(const View: IOTAEditView; var FullRepaint: Boolean); virtual;
+    procedure EditorIdle(const View: IOTAEditView);
+    procedure EndPaint(const View: IOTAEditView);
+    procedure PaintLine(const View: IOTAEditView; LineNumber: Integer; const LineText: PAnsiChar; const TextWidth: Word;
+      const LineAttributes: TOTAAttributeArray; const Canvas: TCanvas; const TextRect: TRect; const LineRect: TRect; const CellSize: TSize); virtual;
+  public
+    constructor Create(const AView: IOTAEditView);
+    destructor Destroy; override;
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
+    property View: IOTAEditView read FView;
+  end;
+
+  TStructureViewNotifier = class(TTOTALNotifier, IOTAStructureNotifier)
+  public
+    { IOTAStructureNotifier }
+    procedure DefaultNodeAction(const Node: IOTAStructureNode);
+    procedure NodeEdited(const Node: IOTAStructureNode);
+    procedure NodeFocused(const Node: IOTAStructureNode);
+    procedure NodeSelected(const Node: IOTAStructureNode);
+    procedure StructureChanged(const Context: IOTAStructureContext); virtual;
+    procedure VisibleChanged(Visible: WordBool);
+  public
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
+  end;
+
   TNonRefInterfacedObject = class(TObject, IInterface)
   protected
     function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
@@ -152,7 +186,7 @@ end;
 
 procedure TDebuggerNotifier.RemoveNotifier;
 begin
-  (BorlandIDEServices as IOTADebuggerServices).RemoveNotifier(Index)
+  (BorlandIDEServices as IOTADebuggerServices).RemoveNotifier(Index);
 end;
 
 function TDebuggerNotifier.BeforeProgramLaunch(const Project: IOTAProject): Boolean;
@@ -297,6 +331,94 @@ end;
 procedure TEditServicesNotifier.WindowShow(const EditWindow: INTAEditWindow; Show, LoadedFromDesktop: Boolean);
 begin
 
+end;
+
+{ TEditViewNotifier }
+
+constructor TEditViewNotifier.Create(const AView: IOTAEditView);
+begin
+  inherited Create;
+  FView := AView;
+  FView.AddNotifier(Self);
+end;
+
+destructor TEditViewNotifier.Destroy;
+begin
+
+  inherited;
+end;
+
+procedure TEditViewNotifier.AddNotifier;
+begin
+
+end;
+
+procedure TEditViewNotifier.RemoveNotifier;
+begin
+
+end;
+
+procedure TEditViewNotifier.BeginPaint(const View: IOTAEditView; var FullRepaint: Boolean);
+begin
+  //
+end;
+
+procedure TEditViewNotifier.EditorIdle(const View: IOTAEditView);
+begin
+  //
+end;
+
+procedure TEditViewNotifier.EndPaint(const View: IOTAEditView);
+begin
+  //
+end;
+
+procedure TEditViewNotifier.PaintLine(const View: IOTAEditView; LineNumber: Integer; const LineText: PAnsiChar; const TextWidth: Word;
+  const LineAttributes: TOTAAttributeArray; const Canvas: TCanvas; const TextRect, LineRect: TRect; const CellSize: TSize);
+begin
+  //
+end;
+
+{ TStructureViewNotifier }
+
+procedure TStructureViewNotifier.AddNotifier;
+begin
+  Index := (BorlandIDEServices as IOTAStructureView).AddNotifier(Self);
+end;
+
+procedure TStructureViewNotifier.RemoveNotifier;
+begin
+  (BorlandIDEServices as IOTAStructureView).RemoveNotifier(Index);
+end;
+
+procedure TStructureViewNotifier.DefaultNodeAction(const Node: IOTAStructureNode);
+begin
+  //
+end;
+
+procedure TStructureViewNotifier.NodeEdited(const Node: IOTAStructureNode);
+begin
+  //
+end;
+
+procedure TStructureViewNotifier.NodeFocused(const Node: IOTAStructureNode);
+begin
+  //
+end;
+
+procedure TStructureViewNotifier.NodeSelected(const Node: IOTAStructureNode);
+begin
+  //
+end;
+
+procedure TStructureViewNotifier.StructureChanged(const Context: IOTAStructureContext);
+begin
+  //
+end;
+
+procedure TStructureViewNotifier.VisibleChanged(Visible: WordBool);
+begin
+  //
 end;
 
 { TNonRefInterfacedObject }
