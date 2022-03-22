@@ -16,7 +16,7 @@ uses
   // Design
   ToolsAPI, PlatformAPI,
   // VCL
-  Vcl.Menus, Vcl.Forms,
+  Vcl.Menus, Vcl.Forms, Vcl.ActnList,
   // DW
   DW.OTA.Types;
 
@@ -56,6 +56,10 @@ type
     /// </summary>
     class procedure ApplyTheme(const AComponent: TComponent); static;
     /// <summary>
+    ///  Clears the message group specified by AGroupName
+    /// </summary>
+    class procedure ClearMessageGroup(const AGroupName: string); static;
+    /// <summary>
     ///  Closes the module that is currently visible in the IDE
     /// </summary>
     class procedure CloseCurrentModule; static;
@@ -80,13 +84,17 @@ type
     /// </summary>
     class function ExpandVars(const ASource: string): string; static;
     /// <summary>
+    ///  Finds an action application-wide
+    /// </summary>
+    class function FindActionGlobal(const AActionName: string; out AAction: TCustomAction): Boolean; static;
+    /// <summary>
     ///  Finds a form with a particular name
     /// </summary>
-    class function FindForm(const AFormName: string; out AForm: TComponent): Boolean; static;
+    class function FindForm(const AFormName: string; out AForm: TComponent; const ACheckVisible: Boolean = False): Boolean; static;
     /// <summary>
     ///  Finds the first form with a particular class
     /// </summary>
-    class function FindFormByClass(const AClassName: string; out AForm: TComponent): Boolean; static;
+    class function FindFormByClass(const AClassName: string; out AForm: TComponent; const ACheckVisible: Boolean = False): Boolean; static;
     /// <summary>
     ///  Finds a component application-wide
     /// </summary>
@@ -145,6 +153,10 @@ type
     /// </summary>
     class function GetActiveSourceEditorFileName: string; static;
     /// <summary>
+    ///  Gets the current module
+    /// </summary>
+    class function GetCurrentModule: IOTAModule; static;
+    /// <summary>
     ///  Gets the currently selected project, if any
     /// </summary>
     class function GetCurrentSelectedProject: IOTAProject; static;
@@ -173,7 +185,7 @@ type
     /// </summary>
     class function GetProjectCurrentConnectionProfile(const AProject: IOTAProject): string; static;
     /// <summary>
-    ///  Gets the projects current mobile device name, if anys
+    ///  Gets the projects current mobile device serial number, if any
     /// </summary>
     class function GetProjectCurrentMobileDeviceName(const AProject: IOTAProject): string; static;
     /// <summary>
@@ -261,6 +273,10 @@ type
     ///  Indicates whether or not a platform matches the profile platform
     /// </summary>
     class function IsMatchingProfilePlatform(const APlatform, AProfilePlatform: string): Boolean; static;
+    /// <summary>
+    ///  Marks the current module as being modified
+    /// </summary>
+    class procedure MarkCurrentModuleModified; static;
     /// <summary>
     ///  Opens the given file in the IDE, where the file may be a project or a group
     /// </summary>
@@ -439,6 +455,20 @@ begin
     LServices.AddTitleMessage(AMsg);
 end;
 
+class procedure TOTAHelper.ClearMessageGroup(const AGroupName: string);
+var
+  LServices: IOTAMessageServices;
+  LGroup: IOTAMessageGroup;
+begin
+  if not AGroupName.IsEmpty then
+  begin
+    LServices := BorlandIDEServices as IOTAMessageServices;
+    LGroup := LServices.GetGroup(AGroupName);
+    if LGroup <> nil then
+      LServices.ClearMessageGroup(LGroup);
+  end
+end;
+
 class procedure TOTAHelper.ShowMessageView(const AGroupName: string = '');
 var
   LServices: IOTAMessageServices;
@@ -455,14 +485,26 @@ begin
     LServices.ShowMessageView(nil);
 end;
 
-class function TOTAHelper.FindForm(const AFormName: string; out AForm: TComponent): Boolean;
+class function TOTAHelper.FindActionGlobal(const AActionName: string; out AAction: TCustomAction): Boolean;
+var
+  LComponent: TComponent;
+begin
+  Result := False;
+  if FindComponentGlobal(AActionName, LComponent) and (LComponent is TCustomAction) then
+  begin
+    AAction := TCustomAction(LComponent);
+    Result := True;
+  end;
+end;
+
+class function TOTAHelper.FindForm(const AFormName: string; out AForm: TComponent; const ACheckVisible: Boolean = False): Boolean;
 var
   I: Integer;
 begin
   Result := False;
   for I := 0 to Screen.FormCount - 1 do
   begin
-    if Screen.Forms[I].Name = AFormName then
+    if (Screen.Forms[I].Name = AFormName) and (not ACheckVisible or Screen.Forms[I].Visible) then
     begin
       AForm := Screen.Forms[I];
       Result := True;
@@ -471,14 +513,14 @@ begin
   end;
 end;
 
-class function TOTAHelper.FindFormByClass(const AClassName: string; out AForm: TComponent): Boolean;
+class function TOTAHelper.FindFormByClass(const AClassName: string; out AForm: TComponent; const ACheckVisible: Boolean = False): Boolean;
 var
   I: Integer;
 begin
   Result := False;
   for I := 0 to Screen.FormCount - 1 do
   begin
-    if Screen.Forms[I].ClassName = AClassName then
+    if (Screen.Forms[I].ClassName = AClassName) and (not ACheckVisible or Screen.Forms[I].Visible) then
     begin
       AForm := Screen.Forms[I];
       Result := True;
@@ -973,6 +1015,15 @@ begin
     LModule.Close;
 end;
 
+class procedure TOTAHelper.MarkCurrentModuleModified;
+var
+  LModule: IOTAModule;
+begin
+  LModule := (BorlandIDEServices as IOTAModuleServices).CurrentModule;
+  if LModule <> nil then
+    LModule.MarkModified;
+end;
+
 class procedure TOTAHelper.RefreshProjectTree;
 var
   LForm: TComponent;
@@ -1033,6 +1084,11 @@ begin
   LEditor := GetActiveSourceEditor;
   if LEditor <> nil then
     Result := LEditor.FileName;
+end;
+
+class function TOTAHelper.GetCurrentModule: IOTAModule;
+begin
+  Result := (BorlandIDEServices as IOTAModuleServices).CurrentModule;
 end;
 
 class function TOTAHelper.GetCurrentSelectedProject: IOTAProject;
