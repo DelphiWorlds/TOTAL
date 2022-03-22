@@ -37,6 +37,7 @@ type
     procedure IDEStopped; virtual;
     procedure Modification; virtual;
     procedure PeriodicTimer; virtual;
+    procedure ProjectChanged; virtual;
   public
     class procedure GetEffectivePaths(const APaths: TStrings; const ABase: Boolean = False);
     class procedure GetSearchPaths(const APlatform: string; const APaths: TStrings; const AAdd: Boolean = False);
@@ -151,6 +152,7 @@ type
     ///   Call Modification to notify the "sub-wizards" that a modification has occurred
     /// </summary>
     procedure Modification;
+    procedure ProjectChanged;
     /// <summary>
     ///   Override this function to respond when all the "sub-wizards" have been created
     /// </summary>
@@ -184,6 +186,10 @@ type
     ///   Override this function if necessary to provide the add-in's version (default is Major.Minor.Release)
     /// </summary>
     class function GetWizardVersion: string; virtual;
+    /// <summary>
+    ///   Override this function if necessary to provide the add-in's license info
+    /// </summary>
+    class function GetWizardLicense: string; virtual;
     /// <summary>
     ///   Call InitializeWizard from the function named as WizardEntryPoint that is exported by your add-in
     /// </summary>
@@ -318,6 +324,11 @@ begin
   //
 end;
 
+procedure TWizard.ProjectChanged;
+begin
+  //
+end;
+
 procedure TWizard.ActiveFormChanged;
 begin
   //
@@ -448,6 +459,17 @@ end;
 procedure TOTAWizard.PeriodicTimer;
 begin
   //
+end;
+
+procedure TOTAWizard.ProjectChanged;
+var
+  LWizard: TWizard;
+begin
+  if FWizards <> nil then
+  begin
+    for LWizard in FWizards do
+      LWizard.ProjectChanged;
+  end;
 end;
 
 function TOTAWizard.FindEditorPopup(out APopup: TPopupActionBar): Boolean;
@@ -663,6 +685,11 @@ begin
   Result := '';
 end;
 
+class function TOTAWizard.GetWizardLicense: string;
+begin
+  Result := '';
+end;
+
 class function TOTAWizard.GetWizardName: string;
 begin
   Result := '';
@@ -722,7 +749,7 @@ begin
   if LBitmapHandle > 0 then
   begin
     LServices := BorlandIDEServices as IOTAAboutBoxServices;
-    FPluginIndex := LServices.AddPluginInfo(GetWizardPluginName, GetWizardDescription, LBitmapHandle, False, '', GetWizardVersion);
+    FPluginIndex := LServices.AddPluginInfo(GetWizardPluginName, GetWizardDescription, LBitmapHandle, False, GetWizardLicense, GetWizardVersion);
   end;
 end;
 
@@ -732,7 +759,7 @@ var
 begin
   LBitmapHandle := LoadBitmap(HInstance, 'SplashScreenBitmap');
   if LBitmapHandle > 0 then
-    SplashScreenServices.AddPluginBitmap(GetWizardName, LBitmapHandle, False, '', GetWizardVersion);
+    SplashScreenServices.AddPluginBitmap(GetWizardName, LBitmapHandle, False, GetWizardLicense, GetWizardVersion);
 end;
 
 class procedure TOTAWizard.RegisterWizard(const AWizardClass: TWizardClass);
