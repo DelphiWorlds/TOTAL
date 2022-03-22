@@ -185,6 +185,10 @@ type
     /// </summary>
     class function GetWizardVersion: string; virtual;
     /// <summary>
+    ///   Override this function if necessary to provide the add-in's license info
+    /// </summary>
+    class function GetWizardLicense: string; virtual;
+    /// <summary>
     ///   Call InitializeWizard from the function named as WizardEntryPoint that is exported by your add-in
     /// </summary>
     /// <remarks>
@@ -663,6 +667,11 @@ begin
   Result := '';
 end;
 
+class function TOTAWizard.GetWizardLicense: string;
+begin
+result := '';
+end;
+
 class function TOTAWizard.GetWizardName: string;
 begin
   Result := '';
@@ -722,7 +731,7 @@ begin
   if LBitmapHandle > 0 then
   begin
     LServices := BorlandIDEServices as IOTAAboutBoxServices;
-    FPluginIndex := LServices.AddPluginInfo(GetWizardPluginName, GetWizardDescription, LBitmapHandle, False, '', GetWizardVersion);
+    FPluginIndex := LServices.AddPluginInfo(GetWizardPluginName, GetWizardDescription, LBitmapHandle, False, GetWizardLicense, GetWizardVersion);
   end;
 end;
 
@@ -732,7 +741,7 @@ var
 begin
   LBitmapHandle := LoadBitmap(HInstance, 'SplashScreenBitmap');
   if LBitmapHandle > 0 then
-    SplashScreenServices.AddPluginBitmap(GetWizardName, LBitmapHandle, False, '', GetWizardVersion);
+    SplashScreenServices.AddPluginBitmap(GetWizardName, LBitmapHandle, False, GetWizardLicense, GetWizardVersion);
 end;
 
 class procedure TOTAWizard.RegisterWizard(const AWizardClass: TWizardClass);
