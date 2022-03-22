@@ -15,7 +15,7 @@ type
 
   TDeployMode = (Normal, AdHoc, AppStore);
 
-  TProjectPlatform = (Android32, Android64, iOSDevice32, iOSDevice64, iOSSimulator, Linux64, macOS32, macOS64, Win32, Win64);
+  TProjectPlatform = (Android32, Android64, iOSDevice32, iOSDevice64, iOSSimulatorArm64, Linux64, macOS32, macOS64, macOSArm64, Win32, Win64);
 
   TProjectPlatforms = set of TProjectPlatform;
 
