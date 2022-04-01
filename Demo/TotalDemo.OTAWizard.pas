@@ -44,6 +44,7 @@ type
     procedure AddToolbarButtons;
   protected
     class function GetWizardName: string; override;
+    class function GetWizardLicense: string; virtual;
   protected
     procedure ActiveFormChanged; override;
     function GetIDString: string; override;
@@ -178,6 +179,11 @@ end;
 function TDemoOTAWizard.GetWizardDescription: string;
 begin
   Result := 'Demo of a Delphi IDE Wizard using TOTAL';
+end;
+
+class function TDemoOTAWizard.GetWizardLicense: string;
+begin
+  Result := 'License for Total Demo';
 end;
 
 class function TDemoOTAWizard.GetWizardName: string;
