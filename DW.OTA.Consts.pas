@@ -16,25 +16,25 @@ uses
 
 const
   cProjectPlatforms: array[TProjectPlatform] of string = (
-    'Android', 'Android64', ciOSDevice32Platform, ciOSDevice64Platform, ciOSSimulatorArm64Platform, cLinux64Platform, cOSX32Platform, cOSX64Platform,
-    cOSXArm64Platform, cWin32Platform, cWin64Platform
+    'Android', 'Android64', ciOSDevice32Platform, ciOSDevice64Platform,{$IF CompilerVersion > 34} ciOSSimulatorArm64Platform, {$ENDIF}cLinux64Platform, cOSX32Platform, cOSX64Platform,
+    {$IF CompilerVersion > 34}cOSXArm64Platform,  {$ENDIF}cWin32Platform, cWin64Platform
   );
 
   cProjectPlatformsShort: array[TProjectPlatform] of string = (
-    'Android', 'Android64', 'iOS32', 'iOS64', 'iOSSimArm64', 'Linux64', 'macOS32', 'macOS64', 'macOSArm64', 'Win32', 'Win64'
+    'Android', 'Android64', 'iOS32', 'iOS64', {$IF CompilerVersion > 34} 'iOSSimArm64',{$ENDIF} 'Linux64', 'macOS32', 'macOS64', {$IF CompilerVersion > 34}'macOSArm64', {$ENDIF}'Win32', 'Win64'
   );
 
   cProjectPlatformsLong: array[TProjectPlatform] of string = (
-    'Android 32-bit', 'Android 64-bit', 'iOS 32-bit', 'iOS 64-bit', 'iOS Simulator Arm 64-bit', 'Linux 64-bit', 'macOS 32-bit', 'macOS 64-bit',
-    'macOS Arm 64-bit', 'Windows 32-bit', 'Windows 64-bit'
+    'Android 32-bit', 'Android 64-bit', 'iOS 32-bit', 'iOS 64-bit',{$IF CompilerVersion > 34} 'iOS Simulator Arm 64-bit',{$ENDIF}  'Linux 64-bit', 'macOS 32-bit', 'macOS 64-bit',
+    {$IF CompilerVersion > 34}'macOS Arm 64-bit',{$ENDIF} 'Windows 32-bit', 'Windows 64-bit'
   );
 
   cProjectPlatformDefaultBuildType: array[TProjectPlatform] of string = (
-    'Development', 'Development', 'Development', 'Development', 'Development', '', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal'
+    'Development', 'Development', 'Development', 'Development', {$IF CompilerVersion > 34}'Development',{$ENDIF} '', 'Normal', 'Normal', {$IF CompilerVersion > 34}'Normal',{$ENDIF} 'Normal', 'Normal'
   );
 
   cProjectPlatformsRegistry: array[TProjectPlatform] of string = (
-    'Android', 'Android64', 'iOSDevice32' , 'iOSDevice64', 'iOSSimulatorArm64', 'Linux64', 'OSX32', 'OSX64', 'OSXArm64', 'Win32', 'Win64'
+    'Android', 'Android64', 'iOSDevice32' , 'iOSDevice64', {$IF CompilerVersion > 34}'iOSSimulatorArm64',{$ENDIF} 'Linux64', 'OSX32', 'OSX64', {$IF CompilerVersion > 34}'OSXArm64',{$ENDIF} 'Win32', 'Win64'
   );
 
   cProjectConfigurations: array[TProjectConfiguration] of string = ('Debug', 'Release');
@@ -61,13 +61,21 @@ const
   );
   {$ENDIF}
 
+  {$IF CompilerVersion > 32}
   cMacOSPlatformNames: array[0..4] of string = (
     ciOSDevice32Platform, ciOSDevice64Platform, ciOSSimulator32Platform, cOSX32Platform, cOSX64Platform
   );
-  cAppleProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.iOSSimulatorArm64, TProjectPlatform.iOSDevice64,
-    TProjectPlatform.macOS32, TProjectPlatform.macOS64, TProjectPlatform.macOSArm64];
-  cIOSProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.iOSSimulatorArm64, TProjectPlatform.iOSDevice64];
-  cMacOSProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.macOS32, TProjectPlatform.macOS64, TProjectPlatform.macOSArm64];
+  {$ELSE}
+  cMacOSPlatformNames: array[0..3] of string = (
+    ciOSDevice32Platform, ciOSDevice64Platform, cOSX32Platform, cOSX64Platform
+  );
+
+  {$ENDIF}
+
+  cAppleProjectPlatforms: set of TProjectPlatform = [{$IF CompilerVersion > 34}TProjectPlatform.iOSSimulatorArm64,{$ENDIF} TProjectPlatform.iOSDevice64,
+    TProjectPlatform.macOS32, TProjectPlatform.macOS64{$IF CompilerVersion > 34}, TProjectPlatform.macOSArm64{$ENDIF}];
+  cIOSProjectPlatforms: set of TProjectPlatform = [{$IF CompilerVersion > 34}TProjectPlatform.iOSSimulatorArm64,{$ENDIF} TProjectPlatform.iOSDevice64];
+  cMacOSProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.macOS32, TProjectPlatform.macOS64{$IF CompilerVersion > 34}, TProjectPlatform.macOSArm64{$ENDIF}];
   cAndroidProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.Android32, TProjectPlatform.Android64];
 
   cTabChar = #9;

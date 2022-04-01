@@ -44,7 +44,7 @@ type
     procedure AddToolbarButtons;
   protected
     class function GetWizardName: string; override;
-    class function GetWizardLicense: string; virtual;
+    class function GetWizardLicense: string; override;
   protected
     procedure ActiveFormChanged; override;
     function GetIDString: string; override;
@@ -183,7 +183,7 @@ end;
 
 class function TDemoOTAWizard.GetWizardLicense: string;
 begin
-  Result := 'License for Total Demo';
+  Result := 'License for Total Demo';// this can not have line breaks
 end;
 
 class function TDemoOTAWizard.GetWizardName: string;

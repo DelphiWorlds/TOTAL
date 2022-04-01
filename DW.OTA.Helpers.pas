@@ -969,22 +969,22 @@ end;
 
 class function TOTAHelper.IsIOSPlatform(const APlatform: string): Boolean;
 begin
-  Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform) or APlatform.Equals(ciOSSimulator32Platform);
+  Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform){$IF CompilerVersion > 34} or APlatform.Equals(ciOSSimulator32Platform){$ENDIF};
 end;
 
 class function TOTAHelper.IsMacOSPlatform(const APlatform: string): Boolean;
 begin
-  Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform) or APlatform.Equals(ciOSSimulator32Platform)
-    or APlatform.Equals(cOSX32Platform) or APlatform.Equals(cOSX64Platform);
+  Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform){$IF CompilerVersion > 34} or APlatform.Equals(ciOSSimulator32Platform){$ENDIF}
+    or APlatform.Equals(cOSX32Platform){$IF CompilerVersion > 34} or APlatform.Equals(cOSX64Platform){$ENDIF};
 end;
 
 class function TOTAHelper.IsMatchingProfilePlatform(const APlatform, AProfilePlatform: string): Boolean;
 begin
   Result := False;
-  if AProfilePlatform.Equals(cOSX32Platform) or AProfilePlatform.Equals(cOSX64Platform) then
+  if AProfilePlatform.Equals(cOSX32Platform){$IF CompilerVersion > 34} or AProfilePlatform.Equals(cOSX64Platform){$ENDIF} then
   begin
-    Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform) or APlatform.Equals(ciOSSimulator32Platform)
-      or APlatform.Equals(cOSX32Platform) or APlatform.Equals(cOSX64Platform)
+    Result := APlatform.Equals(ciOSDevice32Platform) or APlatform.Equals(ciOSDevice64Platform){$IF CompilerVersion > 34} or APlatform.Equals(ciOSSimulator32Platform){$ENDIF}
+      or APlatform.Equals(cOSX32Platform){$IF CompilerVersion > 34} or APlatform.Equals(cOSX64Platform) {$ENDIF}
   end
   else if AProfilePlatform.Equals(cLinux64Platform) then
     Result := APlatform.Equals(cLinux64Platform);
@@ -1003,7 +1003,9 @@ end;
 
 class procedure TOTAHelper.ApplyTheme(const AComponent: TComponent);
 begin
+ {$IF CompilerVersion > 32}
   (BorlandIDEServices as IOTAIDEThemingServices).ApplyTheme(AComponent);
+  {$ENDIF}
 end;
 
 class procedure TOTAHelper.CloseCurrentModule;
@@ -1041,9 +1043,13 @@ class procedure TOTAHelper.RegisterThemeForms(const AFormClasses: array of TCust
 var
   LFormClass: TCustomFormClass;
 begin
+if True then
+
   for LFormClass in AFormClasses do
   begin
-    {$IF CompilerVersion < 34}
+    {$IF CompilerVersion <33}
+    raise Exception.Create('Theme forms not supported');
+    {$ELSEIF CompilerVersion < 34}
     (BorlandIDEServices as IOTAIDEThemingServices250).RegisterFormClass(LFormClass);
     {$ELSE}
     (BorlandIDEServices as IOTAIDEThemingServices).RegisterFormClass(LFormClass);
