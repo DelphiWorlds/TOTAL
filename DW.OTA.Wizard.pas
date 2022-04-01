@@ -187,6 +187,10 @@ type
     /// </summary>
     class function GetWizardVersion: string; virtual;
     /// <summary>
+    ///   Override this function if necessary to provide the add-in's File location
+    /// </summary>
+    class function GetWizardFileName: string; virtual;
+    /// <summary>
     ///   Override this function if necessary to provide the add-in's license info
     /// </summary>
     class function GetWizardLicense: string; virtual;
@@ -683,6 +687,11 @@ end;
 function TOTAWizard.GetWizardDescription: string;
 begin
   Result := '';
+end;
+
+class function TOTAWizard.GetWizardFileName: string;
+begin
+  Result := TOSDevice.GetPackageFileName;
 end;
 
 class function TOTAWizard.GetWizardLicense: string;
