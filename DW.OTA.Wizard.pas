@@ -117,13 +117,17 @@ type
     /// </summary>
     function FindEditorPopup(out APopup: TPopupActionBar): Boolean;
     /// <summary>
-    ///   Returns the plugin name and version
-    /// </summary>
-    function GetWizardPluginName: string;
-    /// <summary>
     ///   Override this function with the description of your add-in
     /// </summary>
     function GetWizardDescription: string; virtual;
+    /// <summary>
+    ///   Returns the plugin filename
+    /// </summary>
+    function GetWizardFileName: string;
+    /// <summary>
+    ///   Returns the plugin name and version
+    /// </summary>
+    function GetWizardPluginName: string;
     /// <summary>
     ///   Call HookedEditorMenu to notify the "sub-wizards" that they can now add items to the wizard's menu item
     /// </summary>
@@ -683,6 +687,11 @@ end;
 function TOTAWizard.GetWizardDescription: string;
 begin
   Result := '';
+end;
+
+function TOTAWizard.GetWizardFileName: string;
+begin
+  Result := GetModuleName(HInstance);
 end;
 
 class function TOTAWizard.GetWizardLicense: string;
