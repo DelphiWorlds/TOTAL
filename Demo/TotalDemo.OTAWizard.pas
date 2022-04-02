@@ -49,6 +49,7 @@ type
     function GetIDString: string; override;
     function GetName: string; override;
     function GetWizardDescription: string; override;
+    class function GetWizardLicense: string; override;
     procedure IDEStarted; override;
     procedure WizardsCreated; override;
   public
@@ -178,6 +179,11 @@ end;
 function TDemoOTAWizard.GetWizardDescription: string;
 begin
   Result := 'Demo of a Delphi IDE Wizard using TOTAL';
+end;
+
+class function TDemoOTAWizard.GetWizardLicense: string;
+begin
+  Result := 'License for TOTAL Demo';
 end;
 
 class function TDemoOTAWizard.GetWizardName: string;
