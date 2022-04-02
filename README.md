@@ -8,6 +8,10 @@ TOTAL is used as the foundation for the [Codex Delphi add-in](https://www.delphi
 
 The goal of TOTAL was to create a framework for creating Delphi add-ins, whilst keeping everything as simple as possible. Having said that, developing Delphi add-ins is by no means simple.
 
+## Supported Delphi versions
+
+TOTAL officially supports Delphi 10.4.x or higher, however it may compile for Delphi 10.3.3 (my Delphi 10.3.3 install is "totalled")
+
 ## Creating an add-in
 
 **Note that TOTAL has a dependency on the [Kastri library](https://github.com/DelphiWorlds/Kastri) **
