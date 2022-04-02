@@ -15,26 +15,49 @@ uses
   DW.OTA.Types;
 
 const
+  {$IF CompilerVersion < 35}
+  cOSXArm64Platform = 'OSXARM64';
+  ciOSSimulatorArm64Platform = 'iOSSimulator64';
+  {$ENDIF}
+
   cProjectPlatforms: array[TProjectPlatform] of string = (
-    'Android', 'Android64', ciOSDevice32Platform, ciOSDevice64Platform, ciOSSimulatorArm64Platform, cLinux64Platform, cOSX32Platform, cOSX64Platform,
-    cOSXArm64Platform, cWin32Platform, cWin64Platform
+    'Android', 'Android64',
+    ciOSDevice32Platform, ciOSDevice64Platform, ciOSSimulatorArm64Platform,
+    cLinux64Platform,
+    cOSX32Platform, cOSX64Platform, cOSXArm64Platform,
+    cWin32Platform, cWin64Platform
   );
 
   cProjectPlatformsShort: array[TProjectPlatform] of string = (
-    'Android', 'Android64', 'iOS32', 'iOS64', 'iOSSimArm64', 'Linux64', 'macOS32', 'macOS64', 'macOSArm64', 'Win32', 'Win64'
+    'Android', 'Android64',
+    'iOS32', 'iOS64', 'iOSSimArm64',
+    'Linux64',
+    'macOS32', 'macOS64', 'macOSArm64',
+    'Win32', 'Win64'
   );
 
   cProjectPlatformsLong: array[TProjectPlatform] of string = (
-    'Android 32-bit', 'Android 64-bit', 'iOS 32-bit', 'iOS 64-bit', 'iOS Simulator Arm 64-bit', 'Linux 64-bit', 'macOS 32-bit', 'macOS 64-bit',
-    'macOS Arm 64-bit', 'Windows 32-bit', 'Windows 64-bit'
+    'Android 32-bit', 'Android 64-bit',
+    'iOS 32-bit', 'iOS 64-bit', 'iOS Simulator ARM 64-bit',
+    'Linux 64-bit',
+    'macOS 32-bit', 'macOS 64-bit', 'macOS ARM 64-bit',
+    'Windows 32-bit', 'Windows 64-bit'
   );
 
   cProjectPlatformDefaultBuildType: array[TProjectPlatform] of string = (
-    'Development', 'Development', 'Development', 'Development', 'Development', '', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal'
+    'Development', 'Development',
+    'Development', 'Development', 'Development',
+    '',
+    'Normal', 'Normal', 'Normal',
+    'Normal', 'Normal'
   );
 
   cProjectPlatformsRegistry: array[TProjectPlatform] of string = (
-    'Android', 'Android64', 'iOSDevice32' , 'iOSDevice64', 'iOSSimulatorArm64', 'Linux64', 'OSX32', 'OSX64', 'OSXArm64', 'Win32', 'Win64'
+    'Android', 'Android64',
+    'iOSDevice32' , 'iOSDevice64', 'iOSSimulatorArm64',
+    'Linux64',
+    'OSX32', 'OSX64', 'OSXArm64',
+    'Win32', 'Win64'
   );
 
   cProjectConfigurations: array[TProjectConfiguration] of string = ('Debug', 'Release');
