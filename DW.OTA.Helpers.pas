@@ -415,14 +415,15 @@ var
   LBitmap: TBitmap;
 begin
   Result := -1;
-  if FindResource(HInstance, PChar(AResName), RT_BITMAP) = 0 then
-    Exit; // <======
-  LBitmap := TBitmap.Create;
-  try
-    LBitmap.LoadFromResourceName(HInstance, AResName);
-    Result := (BorlandIDEServices as INTAServices).AddMasked(LBitmap, LBitmap.Canvas.Pixels[0, LBitmap.Height - 1]);
-  finally
-    LBitmap.Free;
+  if FindResource(HInstance, PChar(AResName), RT_BITMAP) <> 0 then
+  begin
+    LBitmap := TBitmap.Create;
+    try
+      LBitmap.LoadFromResourceName(HInstance, AResName);
+      Result := (BorlandIDEServices as INTAServices).AddMasked(LBitmap, LBitmap.Canvas.Pixels[0, LBitmap.Height - 1]);
+    finally
+      LBitmap.Free;
+    end;
   end;
 end;
 
@@ -441,6 +442,7 @@ class procedure TOTAHelper.AddTitleMessage(const AMsg: string; const AGroupName:
 var
   LServices: IOTAMessageServices;
   LGroup: IOTAMessageGroup;
+  LComponent: TComponent;
 begin
   LServices := BorlandIDEServices as IOTAMessageServices;
   if not AGroupName.IsEmpty then
@@ -449,7 +451,9 @@ begin
     if LGroup = nil then
       LGroup := LServices.AddMessageGroup(AGroupName);
     LServices.AddTitleMessage(AMsg, LGroup);
-    LServices.ShowMessageView(LGroup);
+    LComponent := FindGlobalComponent('MessageViewForm');
+    if LComponent <> nil then
+      LServices.ShowMessageView(LGroup);
   end
   else
     LServices.AddTitleMessage(AMsg);
