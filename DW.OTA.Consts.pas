@@ -15,6 +15,10 @@ uses
   DW.OTA.Types;
 
 const
+  {$IF CompilerVersion < 33}
+  ciOSSimulator32Platform = ciOSSimulatorPlatform;
+  cOSX64Platform = 'OSX64';
+  {$ENDIF}
   {$IF CompilerVersion < 35}
   cOSXArm64Platform = 'OSXARM64';
   ciOSSimulatorArm64Platform = 'iOSSimulator64';
@@ -52,8 +56,16 @@ const
     'Normal', 'Normal'
   );
 
-  cProjectPlatformsRegistry: array[TProjectPlatform] of string = (
+  cProjectPlatformsIDE: array[TProjectPlatform] of string = (
     'Android', 'Android64',
+    'iOSDevice32' , 'iOSDevice64', 'iOSSimulatorArm64',
+    'Linux64',
+    'OSX32', 'OSX64', 'OSXArm64',
+    'Win32', 'Win64'
+  );
+
+  cProjectPlatformsRegistry: array[TProjectPlatform] of string = (
+    'Android32', 'Android64',
     'iOSDevice32' , 'iOSDevice64', 'iOSSimulatorArm64',
     'Linux64',
     'OSX32', 'OSX64', 'OSXArm64',
