@@ -125,6 +125,10 @@ type
     /// </summary>
     class function GetActiveProject: IOTAProject; static;
     /// <summary>
+    ///  Gets the output build folder for the active project (combination of output path and Sanitized Project Name)
+    /// </summary>
+    class function GetActiveProjectBuildPath: string; static;
+    /// <summary>
     ///  Gets the filename for the active project
     /// </summary>
     class function GetActiveProjectFileName: string; static;
@@ -144,6 +148,10 @@ type
     ///  Gets the folder for the active project
     /// </summary>
     class function GetActiveProjectPath: string; static;
+    /// <summary>
+    ///  Gets the sanitized project name for the active project
+    /// </summary>
+    class function GetActiveProjectSanitizedProjectName: string; static;
     /// <summary>
     ///  Gets the active source editor
     /// </summary>
@@ -278,6 +286,10 @@ type
     /// </summary>
     class procedure MarkCurrentModuleModified; static;
     /// <summary>
+    ///  Marks the active project as being modified
+    /// </summary>
+    class procedure MarkActiveProjectModified; static;
+    /// <summary>
     ///  Opens the given file in the IDE, where the file may be a project or a group
     /// </summary>
     class function OpenFile(const AFilename: string): Boolean; static;
@@ -310,7 +322,7 @@ uses
   // RTL
   System.IOUtils, XML.XMLIntf,
   // ToolsAPI
-  DCCStrs,
+  DCCStrs, CommonOptionStrs,
   // Windows
   Winapi.Windows, Winapi.ShLwApi,
   // VCL
@@ -708,6 +720,30 @@ begin
     Result := LGroup.ActiveProject;
 end;
 
+class function TOTAHelper.GetActiveProjectBuildPath: string;
+var
+  LProject: IOTAProject;
+  LProjectName: string;
+begin
+  Result := '';
+  LProject := TOTAHelper.GetActiveProject;
+  if LProject <> nil then
+  begin
+    LProjectName := TOTAHelper.GetProjectActiveBuildConfigurationValue(LProject, sSanitizedProjectName);
+    Result := TPath.Combine(TOTAHelper.GetProjectOutputDir(LProject), LProjectName);
+  end;
+end;
+
+class function TOTAHelper.GetActiveProjectSanitizedProjectName: string;
+var
+  LProject: IOTAProject;
+begin
+  Result := '';
+  LProject := TOTAHelper.GetActiveProject;
+  if LProject <> nil then
+    Result := TOTAHelper.GetProjectActiveBuildConfigurationValue(LProject, sSanitizedProjectName);
+end;
+
 class function TOTAHelper.GetActiveProjectFileName: string;
 var
   LProject: IOTAProject;
@@ -1017,6 +1053,15 @@ begin
   LModule := (BorlandIDEServices as IOTAModuleServices).CurrentModule;
   if LModule <> nil then
     LModule.Close;
+end;
+
+class procedure TOTAHelper.MarkActiveProjectModified;
+var
+  LProject: IOTAProject;
+begin
+  LProject := GetActiveProject;
+  if LProject <> nil then
+    LProject.MarkModified;
 end;
 
 class procedure TOTAHelper.MarkCurrentModuleModified;
