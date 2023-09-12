@@ -48,17 +48,21 @@ type
     /// </summary>
     class procedure AddTitleException(const AException: Exception; const AProcess: string; const AGroupName: string = ''); static;
     /// <summary>
-    ///  Adds a message to a group specified by AGroupName
+    ///  Adds a message to a group specified by AGroupName. Returns the group that the message was added to.
     /// </summary>
-    class procedure AddTitleMessage(const AMsg: string; const AGroupName: string = ''); static;
+    class function AddTitleMessage(const AMsg: string; const AGroupName: string = ''): IOTAMessageGroup; static;
+    /// <summary>
+    ///  Adds a toolbar button to the named toolbar
+    /// </summary>
+    class function AddToolbarButton(const AToolbarName, AButtonName: string; const AAction: TCustomAction): Boolean; static;
     /// <summary>
     ///  Applies the active theme to the component and children
     /// </summary>
     class procedure ApplyTheme(const AComponent: TComponent); static;
     /// <summary>
-    ///  Clears the message group specified by AGroupName
+    ///  Clears the message group specified by AGroupName. Optionally removes the group
     /// </summary>
-    class procedure ClearMessageGroup(const AGroupName: string); static;
+    class procedure ClearMessageGroup(const AGroupName: string; const ARemove: Boolean = False); static;
     /// <summary>
     ///  Closes the module that is currently visible in the IDE
     /// </summary>
@@ -120,6 +124,10 @@ type
     ///  Finds a top-level menu with the given name
     /// </summary>
     class function FindTopMenu(const AMenuName: string; out AMenuItem: TMenuItem): Boolean; static;
+    /// <summary>
+    ///  Finds the top most edit view, if available
+    /// </summary>
+    class function FindTopEditView(const ASourceEditor: IOTASourceEditor; out AEditView: IOTAEditView): Boolean; static;
     /// <summary>
     ///  Gets the active project, if any
     /// </summary>
@@ -450,12 +458,13 @@ begin
   AddTitleMessage(Format('%s - %s: %s', [AProcess, AException.ClassName, AException.Message]), AGroupName);
 end;
 
-class procedure TOTAHelper.AddTitleMessage(const AMsg: string; const AGroupName: string = '');
+class function TOTAHelper.AddTitleMessage(const AMsg: string; const AGroupName: string = ''): IOTAMessageGroup;
 var
   LServices: IOTAMessageServices;
   LGroup: IOTAMessageGroup;
   LComponent: TComponent;
 begin
+  LGroup := nil;
   LServices := BorlandIDEServices as IOTAMessageServices;
   if not AGroupName.IsEmpty then
   begin
@@ -469,9 +478,23 @@ begin
   end
   else
     LServices.AddTitleMessage(AMsg);
+  Result := LGroup;
 end;
 
-class procedure TOTAHelper.ClearMessageGroup(const AGroupName: string);
+class function TOTAHelper.AddToolbarButton(const AToolbarName, AButtonName: string; const AAction: TCustomAction): Boolean;
+var
+  LServices: INTAServices;
+begin
+  Result := False;
+  LServices := BorlandIDEServices as INTAServices;
+  if LServices.GetToolbar(AToolbarName) <> nil then
+  begin
+    LServices.AddToolButton(AToolbarName, AButtonName, AAction);
+    Result := True;
+  end;
+end;
+
+class procedure TOTAHelper.ClearMessageGroup(const AGroupName: string; const ARemove: Boolean = False);
 var
   LServices: IOTAMessageServices;
   LGroup: IOTAMessageGroup;
@@ -481,7 +504,11 @@ begin
     LServices := BorlandIDEServices as IOTAMessageServices;
     LGroup := LServices.GetGroup(AGroupName);
     if LGroup <> nil then
+    begin
       LServices.ClearMessageGroup(LGroup);
+      if ARemove then
+        LServices.RemoveMessageGroup(LGroup);
+    end;
   end
 end;
 
@@ -659,6 +686,16 @@ begin
     Result := FindMenu(LToolsMenuItem, AMenuName, AMenuItem);
 end;
 
+class function TOTAHelper.FindTopEditView(const ASourceEditor: IOTASourceEditor; out AEditView: IOTAEditView): Boolean;
+begin
+  Result := False;
+  if (ASourceEditor <> nil) and (ASourceEditor.EditViewCount > 0) then
+  begin
+    AEditView := ASourceEditor.EditViews[0];
+    Result := True;
+  end;
+end;
+
 class function TOTAHelper.FindTopMenu(const AMenuName: string; out AMenuItem: TMenuItem): Boolean;
 var
   LNTAServices: INTAServices;
@@ -806,10 +843,12 @@ begin
   Result := '';
   LFileName := AProject.ProjectOptions.TargetName;
   case GetProjectCurrentPlatform(AProject) of
-    TProjectPlatform.macOS32, TProjectPlatform.macOS64:
+    TProjectPlatform.macOS32, TProjectPlatform.macOS64, TProjectPlatform.macOSArm64:
       Result := TPath.GetFileName(LFileName + '.app');
     TProjectPlatform.iOSDevice32, TProjectPlatform.iOSDevice64:
       Result := TPath.GetFileName(LFileName + '.ipa');
+  else
+    Result := LFileName;
   end;
 end;
 
