@@ -36,13 +36,20 @@ uses
 { TMenuItemHelper }
 
 class function TMenuItemHelper.CreateSeparator(const AOwner: TComponent; const AIndex: Integer = -1): TMenuItem;
+var
+  LParent: TMenuItem;
 begin
-  Result := TMenuItem.Create(AOwner);
-  Result.Caption := '-';
-  if AIndex > -1 then
-    TMenuItem(AOwner).Insert(AIndex, Result)
-  else
-    TMenuItem(AOwner).Insert(TMenuItem(AOwner).Count, Result);
+  Result := nil;
+  LParent := TMenuItem(AOwner);
+  if (LParent.Count > 0) and ((AIndex <> -1) or (LParent.Items[LParent.Count - 1].Caption <> '-')) then
+  begin
+    Result := TMenuItem.Create(AOwner);
+    Result.Caption := '-';
+    if AIndex > -1 then
+      LParent.Insert(AIndex, Result)
+    else
+      LParent.Insert(TMenuItem(AOwner).Count, Result);
+  end;
 end;
 
 class function TMenuItemHelper.CreateWithAction(const AOwner: TComponent; const ACaption: string; const AHandler: TNotifyEvent;
