@@ -24,6 +24,8 @@ type
   /// </summary>
   TWizard = class(TInterfacedObject)
   protected
+    function _AddRef: Integer; stdcall;
+    function _Release: Integer; stdcall;
     procedure ActiveFormChanged; virtual;
     procedure ConfigChanged; virtual;
     function DebuggerBeforeProgramLaunch(const Project: IOTAProject): Boolean; virtual;
@@ -331,6 +333,16 @@ end;
 procedure TWizard.ProjectChanged;
 begin
   //
+end;
+
+function TWizard._AddRef: Integer;
+begin
+  Result := -1;
+end;
+
+function TWizard._Release: Integer;
+begin
+  Result := -1;
 end;
 
 procedure TWizard.ActiveFormChanged;
@@ -656,16 +668,11 @@ end;
 procedure TOTAWizard.HookedEditorMenuPopup(const AMenuItem: TMenuItem);
 var
   LWizard: TWizard;
-  LIndex: Integer;
 begin
   if FWizards <> nil then
   begin
     for LWizard in FWizards do
-    begin
-      LIndex := AMenuItem.Count - 1;
-      if LWizard.HookedEditorMenuPopup(AMenuItem) and (LIndex > -1) then
-        TMenuItem.CreateSeparator(AMenuItem, LIndex);
-    end;
+      LWizard.HookedEditorMenuPopup(AMenuItem);
   end;
 end;
 
