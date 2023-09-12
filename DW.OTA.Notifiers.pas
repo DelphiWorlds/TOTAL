@@ -27,7 +27,8 @@ type
 
   ITOTALModuleTracker = interface(IInterface)
     ['{38C0E273-C75A-450A-8F7E-5787BEF9A348}']
-    procedure AfterRename(const OldFileName, NewFileName: string);
+    procedure AfterRename(const AOldFileName, ANewFileName: string);
+    procedure AfterSave(const AFileName: string);
   end;
 
   TTOTALNotifier = class(TNotifierObject, ITOTALNotifier)
@@ -126,6 +127,16 @@ type
     procedure RemoveNotifier; override;
   end;
 
+  TMessageNotifier = class(TTOTALNotifier, IOTAMessageNotifier)
+  public
+    { IOTAMessageNotifier }
+    procedure MessageGroupAdded(const Group: IOTAMessageGroup); virtual;
+    procedure MessageGroupDeleted(const Group: IOTAMessageGroup); virtual;
+  public
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
+  end;
+
   TNonRefInterfacedObject = class(TObject, IInterface)
   protected
     function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
@@ -136,7 +147,7 @@ type
   TModuleNotifier = class(TNonRefInterfacedObject, IOTANotifier, IOTAModuleNotifier, IOTAModuleNotifier80, IOTAModuleNotifier90)
   private
     [Weak] FTracker: ITOTALModuleTracker;
-  protected
+  public
     { IOTANotifier }
     procedure AfterSave;
     procedure BeforeSave;
@@ -506,6 +517,28 @@ begin
 end;
 
 procedure TModuleNotifier.SetSaveFileName(const FileName: String);
+begin
+  //
+end;
+
+{ TMessageNotifier }
+
+procedure TMessageNotifier.AddNotifier;
+begin
+  Index := (BorlandIDEServices as IOTAMessageServices).AddNotifier(Self);
+end;
+
+procedure TMessageNotifier.RemoveNotifier;
+begin
+  (BorlandIDEServices as IOTAMessageServices).RemoveNotifier(Index);
+end;
+
+procedure TMessageNotifier.MessageGroupAdded(const Group: IOTAMessageGroup);
+begin
+  //
+end;
+
+procedure TMessageNotifier.MessageGroupDeleted(const Group: IOTAMessageGroup);
 begin
   //
 end;
