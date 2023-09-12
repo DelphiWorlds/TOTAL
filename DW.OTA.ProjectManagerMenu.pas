@@ -20,7 +20,6 @@ type
   TProjectManagerMenu = class;
 
   TProjectManagerMenuNotifier = class(TTOTALNotifier, IUnknown, IOTANotifier, IOTAProjectMenuItemCreatorNotifier)
-  private
   protected
     procedure AddMenuItem(const AItem: TProjectManagerMenu; const APosition: Integer);
     procedure DoAddMenu(const AProject: IOTAProject; const AIdentList: TStrings; const AProjectManagerMenuList: IInterfaceList;
