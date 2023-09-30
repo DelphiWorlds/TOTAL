@@ -45,11 +45,6 @@ begin
   if not SameText(Value, FFileName) and TFile.Exists(Value) then
   begin
     FFileName := Value;
-    Clear;
-    if FProj = nil then
-      FProj := TProj.Create(FFileName)
-    else
-      FProj.LoadFromFile(FFileName);
     LoadTargets;
   end;
 end;
@@ -69,6 +64,10 @@ var
   LProjectPlatform: TProjectPlatform;
   LTarget: TProjectTarget;
 begin
+  if FProj = nil then
+    FProj := TProj.Create(FFileName)
+  else
+    FProj.LoadFromFile(FFileName);
   LPlatforms := FProj.GetPlatforms(True);
   for LConfig in FProj.GetConfigs do
   begin
