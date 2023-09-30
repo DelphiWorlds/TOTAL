@@ -10,7 +10,7 @@ interface
 
 uses
   // Design
-  PlatformConst, {$IF Defined(EXPERT)} ToolsAPI, {$ENDIF}
+  {$IF Defined(EXPERT)} PlatformConst, ToolsAPI, {$ENDIF}
   // TOTAL
   DW.OTA.Types;
 
@@ -24,6 +24,7 @@ const
   ciOSSimulatorArm64Platform = 'iOSSimulator64';
   {$ENDIF}
 
+  {$IF Defined(EXPERT)}
   cProjectPlatforms: array[TProjectPlatform] of string = (
     'Android', 'Android64',
     ciOSDevice32Platform, ciOSDevice64Platform, ciOSSimulatorArm64Platform,
@@ -31,6 +32,7 @@ const
     cOSX32Platform, cOSX64Platform, cOSXArm64Platform,
     cWin32Platform, cWin64Platform
   );
+  {$ENDIF}
 
   cProjectPlatformsShort: array[TProjectPlatform] of string = (
     'Android', 'Android64',
@@ -94,11 +96,11 @@ const
     sHTMLDesignToolbar, sHTMLFormatToolbar, sHTMLTableToolbar, sPersonalityToolBar, sPositionToolbar,
     sSpacingToolbar, sIDEInsightToolbar, sPlatformDeviceToolbar
   );
-  {$ENDIF}
 
   cMacOSPlatformNames: array[0..4] of string = (
     ciOSDevice32Platform, ciOSDevice64Platform, ciOSSimulator32Platform, cOSX32Platform, cOSX64Platform
   );
+  {$ENDIF}
   cAppleProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.iOSSimulatorArm64, TProjectPlatform.iOSDevice64,
     TProjectPlatform.macOS32, TProjectPlatform.macOS64, TProjectPlatform.macOSArm64];
   cIOSProjectPlatforms: set of TProjectPlatform = [TProjectPlatform.iOSSimulatorArm64, TProjectPlatform.iOSDevice64];
