@@ -141,18 +141,25 @@ procedure TBaseProjectConfigComboBox.Clear;
 begin
   inherited;
   FTargets := [];
+  Enabled := False;
 end;
 
 procedure TBaseProjectConfigComboBox.LoadTargets;
 begin
   Clear;
-  DoLoadTargets;
+  Items.BeginUpdate;
+  try
+    DoLoadTargets;
+  finally
+    Items.EndUpdate;
+  end;
   if Length(Targets) > 24 then
     DropDownCount := 24
   else
     DropDownCount := Length(Targets);
   if Items.Count > 0 then
     ItemIndex := 0;
+  Enabled := Items.Count > 0;
 end;
 
 procedure TBaseProjectConfigComboBox.DoLoadTargets;
