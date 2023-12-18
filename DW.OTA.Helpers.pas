@@ -108,6 +108,10 @@ type
     /// </summary>
     class function FindMenu(const AParentItem: TMenuItem; const AMenuName: string; out AMenuItem: TMenuItem): Boolean; static;
     /// <summary>
+    ///  Finds a menu with a given caption from the given parent
+    /// </summary>
+    class function FindMenuByCaption(const AParentItem: TMenuItem; const ACaption: string; out AMenuItem: TMenuItem): Boolean; static;
+    /// <summary>
     ///  Finds the index of the AOccurence-th menu separator (1-based)
     /// </summary>
     class function FindMenuSeparatorIndex(const AParentItem: TMenuItem; const AOccurence: Integer): Integer; overload; static;
@@ -341,6 +345,21 @@ uses
 
 type
   TOpenControl = class(TControl);
+
+function IsLike(const AValue, AIsLikeValue: string): Boolean;
+var
+  LWildStart, LWildEnd: Boolean;
+begin
+  Result := False;
+  LWildStart := AIsLikeValue.StartsWith('%');
+  LWildEnd := AIsLikeValue.EndsWith('%');
+  if LWildStart and not LWildEnd then
+    Result := AValue.EndsWith(AIsLikeValue.Substring(1), True)
+  else if not LWildStart and LWildEnd then
+    Result := AValue.StartsWith(AIsLikeValue.Substring(0, Length(AIsLikeValue) - 1), True)
+  else if LWildStart and LWildEnd then
+    Result := AValue.ToLower.Contains(AIsLikeValue.Substring(1, Length(AIsLikeValue) - 2).ToLower);
+end;
 
 // Tweaked version of David Heffernan's answer, here:
 //   https://stackoverflow.com/questions/5329472/conversion-between-absolute-and-relative-paths-in-delphi
@@ -624,7 +643,23 @@ begin
   Result := False;
   for I := 0 to AParentItem.Count - 1 do
   begin
-    if CompareText(AParentItem[I].Name, AMenuName) = 0 then
+    if SameText(AParentItem[I].Name, AMenuName) then
+    begin
+      AMenuItem := AParentItem[I];
+      Result := True;
+      Break;
+    end;
+  end;
+end;
+
+class function TOTAHelper.FindMenuByCaption(const AParentItem: TMenuItem; const ACaption: string; out AMenuItem: TMenuItem): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to AParentItem.Count - 1 do
+  begin
+    if SameText(AParentItem[I].Caption, ACaption) or IsLike(AParentItem[I].Caption, ACaption) then
     begin
       AMenuItem := AParentItem[I];
       Result := True;
