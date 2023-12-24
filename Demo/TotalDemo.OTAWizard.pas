@@ -36,6 +36,7 @@ type
   private
     FMenuItem: TMenuItem;
     FPMMenuNotifier: ITOTALNotifier;
+    FThemeNotifier: ITOTALNotifier;
     FResources: TResources;
     procedure AddDockWindowMenu;
     procedure AddMenu;
@@ -46,6 +47,7 @@ type
     class function GetWizardName: string; override;
   protected
     procedure ActiveFormChanged; override;
+    procedure ChangedTheme;
     function GetIDString: string; override;
     function GetName: string; override;
     function GetWizardDescription: string; override;
@@ -61,6 +63,28 @@ const
   cPMMPDemoSection = pmmpVersionControlSection + 100000;
   cTOTALDemoToolbarName = 'TOTALDemoToolbar';
   cTOTALDemoToolbarCaption = 'TOTAL';
+
+type
+  TDemoThemingServicesNotifier = class(TThemingServicesNotifier)
+  private
+    FWizard: TDemoOTAWizard;
+  public
+    constructor Create(const AWizard: TDemoOTAWizard);
+    procedure ChangedTheme; override;
+  end;
+
+{ TDemoThemingServicesNotifier }
+
+constructor TDemoThemingServicesNotifier.Create(const AWizard: TDemoOTAWizard);
+begin
+  inherited Create;
+  FWizard := AWizard;
+end;
+
+procedure TDemoThemingServicesNotifier.ChangedTheme;
+begin
+  FWizard.ChangedTheme;
+end;
 
 { TDemoProjectManagerMenuNotifier }
 
@@ -85,6 +109,7 @@ begin
   TOTAHelper.RegisterThemeForms([TDockWindowForm]);
   FResources := TResources.Create(Application);
   FPMMenuNotifier := TDemoProjectManagerMenuNotifier.Create(Self);
+  FThemeNotifier := TDemoThemingServicesNotifier.Create(Self);
   (BorlandIDEServices as INTAServices).NewToolbar(cTOTALDemoToolbarName, cTOTALDemoToolbarCaption);
   AddMenu;
   AddDockWindowMenu;
@@ -95,7 +120,16 @@ destructor TDemoOTAWizard.Destroy;
 begin
   FMenuItem.Free;
   FPMMenuNotifier.RemoveNotifier;
+  FThemeNotifier.RemoveNotifier;
   inherited;
+end;
+
+procedure TDemoOTAWizard.ChangedTheme;
+begin
+  // These calls do nothing, despite what is documented - see: https://quality.embarcadero.com/browse/RSP-43972
+  TOTAHelper.RegisterThemeForms([TDockWindowForm]);
+  if DockWindowForm <> nil then
+    TOTAHelper.ApplyTheme(DockWindowForm);
 end;
 
 procedure TDemoOTAWizard.AddMenu;
