@@ -168,6 +168,16 @@ type
     constructor Create(const ATracker: ITOTALModuleTracker);
   end;
 
+  TThemingServicesNotifier = class(TTOTALNotifier, INTAIDEThemingServicesNotifier)
+  public
+    { INTAIDEThemingServicesNotifier }
+    procedure ChangedTheme; virtual;
+    procedure ChangingTheme; virtual;
+  public
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
+  end;
+
 implementation
 
 { TTOTALNotifier }
@@ -541,6 +551,28 @@ end;
 procedure TMessageNotifier.MessageGroupDeleted(const Group: IOTAMessageGroup);
 begin
   //
+end;
+
+{ TThemingServicesNotifier }
+
+procedure TThemingServicesNotifier.AddNotifier;
+begin
+  Index := (BorlandIDEServices as IOTAIDEThemingServices).AddNotifier(Self);
+end;
+
+procedure TThemingServicesNotifier.RemoveNotifier;
+begin
+  (BorlandIDEServices as IOTAIDEThemingServices).RemoveNotifier(Index);
+end;
+
+procedure TThemingServicesNotifier.ChangedTheme;
+begin
+
+end;
+
+procedure TThemingServicesNotifier.ChangingTheme;
+begin
+
 end;
 
 end.
