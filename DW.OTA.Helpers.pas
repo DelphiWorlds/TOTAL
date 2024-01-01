@@ -1116,8 +1116,13 @@ begin
 end;
 
 class procedure TOTAHelper.ApplyTheme(const AComponent: TComponent);
+var
+  LServices: IOTAIDEThemingServices;
 begin
-  (BorlandIDEServices as IOTAIDEThemingServices).ApplyTheme(AComponent);
+  LServices := BorlandIDEServices as IOTAIDEThemingServices;
+  if AComponent is TCustomForm then
+    LServices.RegisterFormClass(TCustomFormClass(AComponent.ClassType));
+  LServices.ApplyTheme(AComponent);
 end;
 
 class procedure TOTAHelper.CloseCurrentModule;
