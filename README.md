@@ -10,7 +10,7 @@ The goal of TOTAL was to create a framework for creating Delphi add-ins, whilst 
 
 ## Supported Delphi versions
 
-TOTAL officially supports Delphi 10.4.x or higher, however it may compile for Delphi 10.3.3 (my Delphi 10.3.3 install is "totalled")
+TOTAL officially supports Delphi 12 and 11.x, however it may compile for earlier versions.
 
 ## Creating an add-in
 
@@ -30,10 +30,6 @@ This completes the basic requirements for your add-in.
 
 Total has a number of functions (in TOTAHelper record in the DW.OTA.Helpers unit) to help you code your add-in. Here are just a few:
 
-### TOTAHelper.RegisterThemeForms
-
-Call this method to register any forms you have in your add-in so that they are themed the same as the IDE
-
 ### TOTAHelper.ApplyTheme
 
 Applies the active theme to a component and its children. Updates the UI properties like Color, Font.Color on controls that do not use style hooks (eg TLabel, TPanel etc)
@@ -49,6 +45,7 @@ Finds a top-level menu in the IDE with the given *name*. Note that the name is u
 
 Finds the Tools top-level menu item in the IDE. Use this if you want to place a menu item of your own under the Tools menu
 
+### Other functions
 
 There are a number of other helper functions - please refer to the DW.OTA.Helpers unit as they are all documented there
 
