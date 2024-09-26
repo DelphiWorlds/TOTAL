@@ -6,8 +6,6 @@ unit DW.OTA.Registry;
 {                                                       }
 {*******************************************************}
 
-{$I DW.GlobalDefines.inc}
-
 interface
 
 uses
@@ -33,7 +31,9 @@ type
     procedure ReadKeys(const APath: string; const AKeys: TStrings); overload;
     function ReadKeys(const APath: string): TArray<string>; overload;
     function ReadSubKeyString(const APath, AName: string): string;
+    function ReadValues(const APath: string): TArray<string>;
     function WriteSubKeyString(const APath, AName, AValue: string): Boolean;
+    function WriteValues(const APath, ANamePrefix: string; const AValues: TArray<string>): Boolean;
     property RootPath: string read FRootPath;
   end;
 
@@ -136,12 +136,47 @@ begin
   end;
 end;
 
+function TBDSRegistry.ReadValues(const APath: string): TArray<string>;
+var
+  LKeys: TStrings;
+  I: Integer;
+begin
+  if OpenSubKey(APath) then
+  try
+    LKeys := TStringList.Create;
+    try
+      GetValueNames(LKeys);
+      for I := 0 to LKeys.Count - 1 do
+        Result := Result + [ReadString(LKeys[I])];
+    finally
+      LKeys.Free;
+    end;
+  finally
+    CloseKey;
+  end;
+end;
+
 function TBDSRegistry.WriteSubKeyString(const APath, AName, AValue: string): Boolean;
 begin
   Result := False;
   if OpenSubKey(APath, True) then
   try
     WriteString(AName, AValue);
+    Result := True;
+  finally
+    CloseKey;
+  end;
+end;
+
+function TBDSRegistry.WriteValues(const APath, ANamePrefix: string; const AValues: TArray<string>): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  if OpenSubKey(APath) then
+  try
+    for I := 0 to Length(AValues) - 1 do
+      WriteString(ANamePrefix + I.ToString, AValues[I]);
     Result := True;
   finally
     CloseKey;
