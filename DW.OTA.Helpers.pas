@@ -6,18 +6,12 @@ unit DW.OTA.Helpers;
 {                                                       }
 {*******************************************************}
 
-{$I DW.GlobalDefines.inc}
-
 interface
 
 uses
-  // RTL
   System.Classes, System.SysUtils,
-  // Design
   ToolsAPI, PlatformAPI,
-  // VCL
   Vcl.Menus, Vcl.Forms, Vcl.ActnList,
-  // DW
   DW.OTA.Types;
 
 const
@@ -233,7 +227,7 @@ type
     /// </summary>
     class function GetProjectActiveBuildConfiguration(const AProject: IOTAProject): IOTABuildConfiguration; static;
     /// <summary>
-    ///  Gets the active build configuration for the given project
+    ///  Gets the active build configuration value for the given project and key
     /// </summary>
     class function GetProjectActiveBuildConfigurationValue(const AProject: IOTAProject; const AKey: string): string; static;
     /// <summary>
@@ -309,6 +303,7 @@ type
     ///  Refreshes the project manager tree
     /// </summary>
     class procedure RefreshProjectTree; static;
+    class procedure ResetProjectSearchPathToBase(const AProject: IOTAProject; const AExcludePlatforms: TArray<string> = []); static;
     /// <summary>
     ///  Shows the message view in the messages window for the given group
     /// </summary>
@@ -317,6 +312,13 @@ type
     ///  Sets the projects SDK version
     /// </summary>
     class procedure SetProjectSDKVersion(const AProject: IOTAProject; const APlatform, ASDKVersion: string); static;
+    /// <summary>
+    ///  Sets the projects output path for all platforms/configs, *removing* the values from descendants (i.e. Platforms/Configs)
+    /// </summary>
+    /// <remarks>
+    ///  Omitting ADCUPath will result in the DCU path being set to the *same* as the Output path
+    /// </remarks>
+    class procedure SetProjectOutputToBase(const AProject: IOTAProject; const AOutputPath: string; const ADCUPath: string = ''); static;
     /// <summary>
     ///  Shows the message view in the messages window for the given group
     /// </summary>
@@ -331,16 +333,11 @@ function GetEnvironmentVars(const Vars: TStrings; Expand: Boolean): Boolean;
 implementation
 
 uses
-  // RTL
-  System.IOUtils, XML.XMLIntf,
-  // ToolsAPI
+  System.IOUtils, System.StrUtils, XML.XMLIntf,
   DCCStrs, CommonOptionStrs,
-  // Windows
   Winapi.Windows, Winapi.ShLwApi,
-  // VCL
   Vcl.Graphics, Vcl.Controls,
-  // DW
-  DW.OSLog,
+  // DW.OSLog,
   DW.OTA.Consts;
 
 type
@@ -863,6 +860,60 @@ begin
   end;
 end;
 
+class procedure TOTAHelper.SetProjectOutputToBase(const AProject: IOTAProject; const AOutputPath: string; const ADCUPath: string = '');
+var
+  LConfigs: IOTAProjectOptionsConfigurations;
+  I: Integer;
+  LConfig: IOTABuildConfiguration;
+begin
+  LConfigs := GetProjectOptionsConfigurations(AProject);
+  for I := 0 to LConfigs.ConfigurationCount - 1 do
+  begin
+    LConfig := LConfigs.Configurations[I];
+    if LConfig.Platform.IsEmpty and LConfig.Name.Equals('Base') then
+    begin
+      LConfig.Value[sExeOutput] := AOutputPath;
+      if ADCUPath.IsEmpty then
+        LConfig.Value[sDcuOutput] := AOutputPath
+      else
+        LConfig.Value[sDcuOutput] := ADCUPath;
+    end;
+    if MatchStr(LConfig.Platform, AProject.SupportedPlatforms) then
+    begin
+      LConfig.Value[sExeOutput] := '';
+      LConfig.Value[sDcuOutput] := '';
+    end;
+  end;
+  AProject.MarkModified;
+end;
+
+class procedure TOTAHelper.ResetProjectSearchPathToBase(const AProject: IOTAProject; const AExcludePlatforms: TArray<string> = []);
+var
+  LConfigs: IOTAProjectOptionsConfigurations;
+  I: Integer;
+  LConfig: IOTABuildConfiguration;
+  LSearchPath: string;
+begin
+  LSearchPath := '';
+  LConfigs := GetProjectOptionsConfigurations(AProject);
+  for I := 0 to LConfigs.ConfigurationCount - 1 do
+  begin
+    LConfig := LConfigs.Configurations[I];
+    if LConfig.Platform.IsEmpty and LConfig.Name.Equals('Base') then
+      LSearchPath := LConfig.Value[sUnitSearchPath];
+  end;
+  if not LSearchPath.IsEmpty then
+  begin
+    for I := 0 to LConfigs.ConfigurationCount - 1 do
+    begin
+      LConfig := LConfigs.Configurations[I];
+      if MatchStr(LConfig.Platform, AProject.SupportedPlatforms) and not MatchStr(LConfig.Platform, AExcludePlatforms) then
+        LConfig.Value[sUnitSearchPath] := LSearchPath;
+    end;
+    AProject.MarkModified;
+  end;
+end;
+
 class procedure TOTAHelper.SetProjectSDKVersion(const AProject: IOTAProject; const APlatform, ASDKVersion: string);
 var
   LPlatforms: IOTAProjectPlatforms;
@@ -912,7 +963,7 @@ begin
   Result := nil;
   if AProject <> nil then
   begin
-    LConfigs := TOTAHelper.GetProjectOptionsConfigurations(AProject);
+    LConfigs := GetProjectOptionsConfigurations(AProject);
     if LConfigs <> nil then
       Result := LConfigs.ActiveConfiguration;
   end;
@@ -1278,7 +1329,10 @@ begin
   begin
     LPair := LString.Split(['=']);
     if (Length(LPair) = 2) and SameText(AKey, LPair[0]) then
-      Exit(LPair[1]);
+    begin
+      Result := LPair[1];
+      Break;
+    end;
   end;
 end;
 
@@ -1286,14 +1340,20 @@ class function TOTAHelper.GetProjectPlatform(const APlatform: string): TProjectP
 var
   LPlatform: TProjectPlatform;
 begin
-  Result := TProjectPlatform(-1);
-  for LPlatform := Low(TProjectPlatform) to High(TProjectPlatform) do
-  begin
-    if SameText(APlatform, cProjectPlatforms[LPlatform]) then
-      Exit(LPlatform); // <======
-  end;
   if SameText(APlatform, 'Android') then
-    Result := TProjectPlatform.Android32;
+    Result := TProjectPlatform.Android32
+  else
+  begin
+    Result := TProjectPlatform(-1);
+    for LPlatform := Low(TProjectPlatform) to High(TProjectPlatform) do
+    begin
+      if SameText(APlatform, cProjectPlatforms[LPlatform]) then
+      begin
+        Result := LPlatform;
+        Break;
+      end;
+    end;
+  end;
 end;
 
 class function TOTAHelper.GetProjectSupportedPlatforms(const AProject: IOTAProject): TProjectPlatforms;
