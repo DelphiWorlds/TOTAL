@@ -175,10 +175,11 @@ type
     procedure RemoveNotifier; override;
   end;
 
-  THighlighter = class(TNotifierObject, IOTANotifier, IOTAHighlighter)
+  THighlighter = class(TTOTALNotifier, IOTANotifier, IOTAHighlighter)
   public
-    class procedure AddHighlighter(const AHighlighter: IOTAHighlighter);
-  public
+    { ITOTALNotifier }
+    procedure AddNotifier; override;
+    procedure RemoveNotifier; override;
     { IOTAHighlighter }
     function GetIDString: string; virtual;
     function GetName: string; virtual;
@@ -585,11 +586,6 @@ end;
 
 { THighlighter }
 
-class procedure THighlighter.AddHighlighter(const AHighlighter: IOTAHighlighter);
-begin
-  (BorlandIDEServices as IOTAHighlightServices).AddHighlighter(AHighlighter);
-end;
-
 function THighlighter.GetIDString: string;
 begin
   Result := ''; // e.g. 'DelphiWorlds.Highlighter.ISS';
@@ -598,6 +594,16 @@ end;
 function THighlighter.GetName: string;
 begin
   Result := ''; // e.g. 'InnoSetup File';
+end;
+
+procedure THighlighter.AddNotifier;
+begin
+  (BorlandIDEServices as IOTAHighlightServices).AddHighlighter(Self);
+end;
+
+procedure THighlighter.RemoveNotifier;
+begin
+  (BorlandIDEServices as IOTAHighlightServices).RemoveHighlighter(Index);
 end;
 
 procedure THighlighter.Tokenize(StartClass: TOTALineClass; LineBuf: POTAEdChar; LineBufLen: TOTALineSize; HighlightCodes: POTASyntaxCode);
