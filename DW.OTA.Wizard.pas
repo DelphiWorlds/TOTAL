@@ -6,8 +6,6 @@ unit DW.OTA.Wizard;
 {                                                       }
 {*******************************************************}
 
-{$I DW.GlobalDefines.inc}
-
 interface
 
 uses

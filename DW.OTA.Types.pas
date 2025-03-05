@@ -6,8 +6,6 @@ unit DW.OTA.Types;
 {                                                       }
 {*******************************************************}
 
-{$I DW.GlobalDefines.inc}
-
 interface
 
 type
