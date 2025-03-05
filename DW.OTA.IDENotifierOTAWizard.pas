@@ -9,9 +9,7 @@ unit DW.OTA.IDENotifierOTAWizard;
 interface
 
 uses
-  // Design
   ToolsAPI,
-  // DW
   DW.OTA.Wizard, DW.OTA.Notifiers;
 
 type

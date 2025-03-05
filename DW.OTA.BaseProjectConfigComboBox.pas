@@ -9,15 +9,10 @@ unit DW.OTA.BaseProjectConfigComboBox;
 interface
 
 uses
-  // RTL
   System.Types, System.Classes,
-  // Win
   Winapi.Messages,
-  // Vcl
   Vcl.Controls, Vcl.StdCtrls,
-  // DW
   DW.Proj.Types,
-  // TOTAL
   DW.OTA.Types;
 
 const

@@ -9,9 +9,7 @@ unit DW.OTA.Consts;
 interface
 
 uses
-  // Design
   {$IF Defined(EXPERT)} PlatformConst, ToolsAPI, {$ENDIF}
-  // TOTAL
   DW.OTA.Types;
 
 const

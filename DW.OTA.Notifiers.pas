@@ -9,11 +9,8 @@ unit DW.OTA.Notifiers;
 interface
 
 uses
-  // RTL
   System.Generics.Collections, System.Classes, System.Types,
-  // Design
   DockForm, ToolsAPI, StructureViewAPI,
-  // Vcl
   Vcl.Graphics;
 
 type

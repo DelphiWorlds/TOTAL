@@ -9,9 +9,7 @@ unit DW.Menus.Helpers;
 interface
 
 uses
-  // RTL
   System.Classes,
-  // Vcl
   Vcl.Menus;
 
 type

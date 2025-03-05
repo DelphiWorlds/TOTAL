@@ -9,9 +9,7 @@ unit DW.OTA.ProjectConfigComboBox;
 interface
 
 uses
-  // ToolsAPI
   ToolsAPI, PlatformAPI,
-  // TOTAL
   DW.OTA.BaseProjectConfigComboBox;
 
 type
@@ -32,11 +30,8 @@ type
 implementation
 
 uses
-  // RTL
   System.SysUtils,
-  // DW
   DW.Proj.Types,
-  // TOTAL
   DW.OTA.Helpers, DW.OTA.Types;
 
 { TOTAProjectConfigComboBox }
