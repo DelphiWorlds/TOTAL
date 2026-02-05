@@ -9,6 +9,7 @@ uses
   System.Classes,
   // ToolsAPI
   ToolsAPI,
+  BrandingAPI,
   // Vcl
   Vcl.Menus, Vcl.Forms, Vcl.Dialogs,
   // TOTAL
@@ -127,7 +128,6 @@ end;
 procedure TDemoOTAWizard.ChangedTheme;
 begin
   // These calls do nothing, despite what is documented - see: https://quality.embarcadero.com/browse/RSP-43972
-  TOTAHelper.RegisterThemeForms([TDockWindowForm]);
   if DockWindowForm <> nil then
     TOTAHelper.ApplyTheme(DockWindowForm);
 end;
@@ -171,7 +171,7 @@ begin
   if DockWindowForm = nil then
   begin
     DockWindowForm := TDockWindowForm.Create(Application);
-    TOTAHelper.ApplyTheme(DockWindowForm);
+    ChangedTheme;
   end;
   DockWindowForm.Show;
 end;
