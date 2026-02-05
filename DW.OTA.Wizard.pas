@@ -225,7 +225,28 @@ uses
   // Windows
   Winapi.Windows,
   // DW
-  DW.OTA.Registry, DW.OTA.Helpers, DW.Menus.Helpers, DW.OSDevice;
+  DW.OTA.Registry, DW.OTA.Helpers, DW.Menus.Helpers;
+
+type
+  TVersionInfo = record
+  private
+    function GetVerValue(const ABuffer: Pointer; const AName: string): string;
+    function GetTranslation(const ABuffer: Pointer): Pointer;
+    function GetTranslationString(const ABuffer: Pointer): string;
+  public
+    Major: Word;
+    Minor: Word;
+    Build: Word;
+    Release: Word;
+    InternalName: string;
+    IsBeta: Boolean;
+    ProductName: string;
+    ProductVersion: string;
+    procedure ReadVersionInfo;
+  end;
+
+var
+  ExpertVersionInfo: TVersionInfo;
 
 function GetEnvironmentVariable(const AName: string): string;
 const
@@ -718,11 +739,10 @@ class function TOTAWizard.GetWizardVersion: string;
 var
   LBuild: string;
 begin
-  Result := TOSDevice.GetPackageVersion;
-  if TOSDevice.IsBeta then
+  Result := ExpertVersionInfo.ProductVersion;
+  if ExpertVersionInfo.IsBeta then
   begin
-    LBuild := TOSDevice.GetPackageBuild;
-    if not LBuild.Equals('0') then
+    if ExpertVersionInfo.Build <> 0 then
       Result := Format('%s (Beta %s)', [Result, LBuild])
     else
       Result := Format('%s (Beta)', [Result]);
@@ -799,5 +819,77 @@ begin
   DestroyWizards;
   (BorlandIDEServices as IOTAWizardServices).RemoveWizard(FIndex);
 end;
+
+{ TVersionInfo}
+
+function TVersionInfo.GetTranslation(const ABuffer: Pointer): Pointer;
+var
+  LLen: UINT;
+begin
+  VerQueryValue(ABuffer, '\VarFileInfo\Translation', Result, LLen)
+end;
+
+function TVersionInfo.GetTranslationString(const ABuffer: Pointer): string;
+var
+  LPtr: Pointer;
+begin
+  LPtr := GetTranslation(ABuffer);
+  if LPtr <> nil then
+    Result := IntToHex(MakeLong(HiWord(Longint(LPtr^)), LoWord(Longint(LPtr^))), 8)
+  else
+    Result := '';
+end;
+
+function TVersionInfo.GetVerValue(const ABuffer: Pointer; const AName: string): string;
+var
+  LName: array [0..255] of Char;
+  LValue: Pointer;
+  LLen: UINT;
+begin
+  Result := '';
+  StrPCopy(LName, '\StringFileInfo\' + GetTranslationString(ABuffer) + '\' + AName);
+  if VerQueryValue(ABuffer, LName, LValue, LLen) then
+    Result := PChar(LValue);
+end;
+
+procedure TVersionInfo.ReadVersionInfo;
+var
+  LHandle, LSize, LMasked: DWORD;
+  LBuffer: Pointer;
+  LLen: UInt;
+  LFileName: PChar;
+  LFixedFileInfo: PVSFixedFileInfo;
+  LTranslationString: string;
+begin
+  LFileName := PChar(GetModuleName(HInstance));
+  LSize := GetFileVersionInfoSize(LFileName, LHandle);
+  if LSize > 0 then
+  begin
+    GetMem(LBuffer, LSize);
+    try
+      if GetFileVersionInfo(LFileName, LHandle, LSize, LBuffer) then
+      begin
+        VerQueryValue(LBuffer, '\', Pointer(LFixedFileInfo), LLen);
+        if LFixedFileInfo <> nil then
+        begin
+          Major := HiWord(LFixedFileInfo.dwFileVersionMS);
+          Minor := LoWord(LFixedFileInfo.dwFileVersionMS);
+          Release := HiWord(LFixedFileInfo.dwFileVersionLS);
+          Build := LoWord(LFixedFileInfo.dwFileVersionLS);
+          LMasked := LFixedFileInfo.dwFileFlags and LFixedFileInfo.dwFileFlagsMask;
+          IsBeta := (LMasked and VS_FF_PRERELEASE) <> 0;
+          InternalName := GetVerValue(LBuffer, 'InternalName');
+          ProductName := GetVerValue(LBuffer, 'ProductName');
+          ProductVersion := Format('%d.%d.%d', [Major, Minor, Release]);
+        end;
+      end;
+    finally
+      FreeMem(LBuffer);
+    end;
+  end;
+end;
+
+initialization
+  ExpertVersionInfo.ReadVersionInfo;
 
 end.

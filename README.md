@@ -14,8 +14,6 @@ TOTAL officially supports Delphi 12 and 11.x, however it may compile for earlier
 
 ## Creating an add-in
 
-**Note that TOTAL has a dependency on the [Kastri library](https://github.com/DelphiWorlds/Kastri)**
-
 1. In Delphi, File|New|Other, select Delphi, then Dynamic Library (currently only DLL add-ins are supported with TOTAL)
 2. In the Project Options, select Building > Delphi Compiler, All configurations - All platforms
 3. Optional: In Conditional Defines enter: EXPERT (please see below about how it is used)
